@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { Search, Heart, Bell, User, Store, Menu, X, Calendar, ChevronDown } from "lucide-react";
 import { categories } from "@/data";
 import CategoryIcon from "@/components/CategoryIcon";
+import { useAuth } from "@/lib/useAuth";
+import { supabase } from "@/lib/supabase";
 
 const NAV_LINKS = [
   { href: "/", label: "Beranda" },
@@ -19,6 +21,12 @@ export default function Navbar() {
   const [catOpen, setCatOpen] = useState(false);
   const [searchVal, setSearchVal] = useState("");
   const pathname = usePathname();
+  const { user } = useAuth();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-[0_2px_12px_rgba(28,171,180,0.10)]">
@@ -28,31 +36,29 @@ export default function Navbar() {
       </div>
 
       {/* Main navbar */}
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-1 flex items-center gap-3">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-2 flex items-center gap-3">
 
         {/* Logo */}
-        <Link href="/" className="flex-shrink-0 flex items-center gap-2 mr-4">
-  <img src="/logo/festara-icon-color.png" alt="Festara" className="h-8 w-auto object-contain" />
-  <span className="font-bold text-[#16302e] text-lg hidden sm:block"
-    style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: "-0.03em" }}>
-    festara
-  </span>
-</Link>
+        <Link href="/" className="flex-shrink-0 flex items-center gap-2 mr-2">
+          <img src="/logo/festara-icon-color.png" alt="Festara" className="h-8 w-auto object-contain" />
+          <span className="font-bold text-[#16302e] text-lg hidden sm:block"
+            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: "-0.03em" }}>
+            festara
+          </span>
+        </Link>
 
         {/* Nav links desktop */}
-        <nav className="hidden md:flex items-center gap-0.5 flex-1">
+        <nav className="hidden md:flex items-center gap-0 flex-1">
           {NAV_LINKS.map(link =>
             link.label === "Kategori" ? (
               <div key={link.href} className="relative">
                 <button
                   onClick={() => setCatOpen(!catOpen)}
                   onBlur={() => setTimeout(() => setCatOpen(false), 150)}
-                  className={`flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-medium transition-colors
-                    ${pathname === link.href
-                      ? "text-[#1CABB4] bg-[#E8F8F9]"
-                      : "text-[#4A7A6D] hover:text-[#1CABB4] hover:bg-[#E8F8F9]"}`}>
+                  className={`flex items-center gap-1 px-2 py-2 rounded-xl text-xs font-medium transition-colors
+                    ${pathname === link.href ? "text-[#1CABB4] bg-[#E8F8F9]" : "text-[#4A7A6D] hover:text-[#1CABB4] hover:bg-[#E8F8F9]"}`}>
                   {link.label}
-                  <ChevronDown size={13} className={`transition-transform duration-200 ${catOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown size={12} className={`transition-transform duration-200 ${catOpen ? "rotate-180" : ""}`} />
                 </button>
                 {catOpen && (
                   <div className="absolute top-full left-0 mt-2 bg-white rounded-2xl shadow-[0_8px_32px_rgba(28,171,180,0.15)] border border-[#D4EAC8] z-50 overflow-hidden w-52">
@@ -72,10 +78,8 @@ export default function Navbar() {
               </div>
             ) : (
               <Link key={link.href} href={link.href}
-                className={`px-3 py-2 rounded-xl text-sm font-medium transition-colors
-                  ${pathname === link.href
-                    ? "text-[#1CABB4] bg-[#E8F8F9]"
-                    : "text-[#4A7A6D] hover:text-[#1CABB4] hover:bg-[#E8F8F9]"}`}>
+                className={`px-2 py-2 rounded-xl text-xs font-medium transition-colors
+                  ${pathname === link.href ? "text-[#1CABB4] bg-[#E8F8F9]" : "text-[#4A7A6D] hover:text-[#1CABB4] hover:bg-[#E8F8F9]"}`}>
                 {link.label}
               </Link>
             )
@@ -110,19 +114,39 @@ export default function Navbar() {
           <Link href="/chat" className="p-2 rounded-xl hover:bg-[#E8F8F9] transition-colors hidden md:flex">
             <Calendar size={20} className="text-[#4A7A6D]" />
           </Link>
-          <Link href="/dashboard" className="p-2 rounded-xl hover:bg-[#E8F8F9] transition-colors hidden md:flex">
-            <User size={20} className="text-[#4A7A6D]" />
-          </Link>
-          <Link href="/login"
-            className="hidden md:flex text-sm font-semibold text-[#4A7A6D] hover:text-[#1CABB4] px-3 py-2 rounded-xl hover:bg-[#E8F8F9] transition-colors">
-            Masuk
-          </Link>
-          <Link href="/register"
-            className="hidden md:flex items-center gap-1.5 bg-[#1CABB4] hover:bg-[#178E96] text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
-            Daftar
-          </Link>
+
+          {/* Auth section */}
+          {user ? (
+            <div className="hidden md:flex items-center gap-1">
+              <Link href="/dashboard"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#E8F8F9] transition-colors">
+                <div className="w-7 h-7 bg-[#1CABB4] rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                  {user.email?.[0].toUpperCase()}
+                </div>
+                <span className="text-sm font-semibold text-[#1A3A3C] hidden lg:block max-w-[100px] truncate">
+                  {user.email?.split("@")[0]}
+                </span>
+              </Link>
+              <button onClick={handleLogout}
+                className="text-xs font-semibold text-[#4A7A6D] hover:text-[#EF4444] px-3 py-2 rounded-xl hover:bg-[#FEF2F2] transition-colors">
+                Keluar
+              </button>
+            </div>
+          ) : (
+            <div className="hidden md:flex items-center gap-1">
+              <Link href="/login"
+                className="text-xs font-semibold text-[#4A7A6D] hover:text-[#1CABB4] px-3 py-2 rounded-xl hover:bg-[#E8F8F9] transition-colors">
+                Masuk
+              </Link>
+              <Link href="/register"
+                className="items-center gap-1.5 bg-[#1CABB4] hover:bg-[#178E96] text-white text-xs font-semibold px-3 py-2 rounded-xl transition-colors flex">
+                Daftar
+              </Link>
+            </div>
+          )}
+
           <Link href="/seller"
-            className="hidden md:flex items-center gap-1.5 border border-[#D4EAC8] text-[#4A7A6D] hover:border-[#1CABB4] hover:text-[#1CABB4] text-xs font-semibold px-3 py-2 rounded-xl transition-colors">
+            className="hidden md:flex items-center gap-1.5 border border-[#D4EAC8] text-[#4A7A6D] hover:border-[#1CABB4] hover:text-[#1CABB4] text-xs font-semibold px-2 py-2 rounded-xl transition-colors">
             <Store size={13} /> Vendor
           </Link>
           <button onClick={() => setMenuOpen(!menuOpen)}
@@ -148,7 +172,6 @@ export default function Navbar() {
       {/* Mobile menu */}
       {menuOpen && (
         <div className="md:hidden border-t border-[#D4EAC8] bg-white px-4 py-4 space-y-3">
-          {/* Mobile search */}
           <div className="flex bg-[#F0FBF5] border border-[#D4EAC8] rounded-2xl overflow-hidden">
             <input
               className="flex-1 px-4 py-2.5 bg-transparent text-sm outline-none placeholder:text-[#8ABDB5] text-[#1A3A3C]"
@@ -158,20 +181,16 @@ export default function Navbar() {
             </button>
           </div>
 
-          {/* Mobile nav links */}
           <div className="flex flex-col gap-0.5">
             {NAV_LINKS.map(link => (
               <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)}
                 className={`px-4 py-3 rounded-xl text-sm font-medium transition-colors
-                  ${pathname === link.href
-                    ? "text-[#1CABB4] bg-[#E8F8F9]"
-                    : "text-[#4A7A6D] hover:bg-[#F0FBF5]"}`}>
+                  ${pathname === link.href ? "text-[#1CABB4] bg-[#E8F8F9]" : "text-[#4A7A6D] hover:bg-[#F0FBF5]"}`}>
                 {link.label}
               </Link>
             ))}
           </div>
 
-          {/* Mobile categories */}
           <div className="grid grid-cols-4 gap-2 pt-2 border-t border-[#EAF5E4]">
             {categories.map(cat => (
               <Link key={cat.id} href={`/search?cat=${cat.id}`} onClick={() => setMenuOpen(false)}
@@ -185,17 +204,33 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Mobile auth */}
-          <div className="flex gap-2 pt-2 border-t border-[#EAF5E4]">
-            <Link href="/login" onClick={() => setMenuOpen(false)}
-              className="flex-1 text-center py-2.5 border border-[#1CABB4] text-[#1CABB4] font-semibold rounded-xl text-sm hover:bg-[#E8F8F9] transition-colors">
-              Masuk
-            </Link>
-            <Link href="/register" onClick={() => setMenuOpen(false)}
-              className="flex-1 text-center py-2.5 bg-[#1CABB4] text-white font-semibold rounded-xl text-sm hover:bg-[#178E96] transition-colors">
-              Daftar
-            </Link>
-          </div>
+          {user ? (
+            <div className="flex gap-2 pt-2 border-t border-[#EAF5E4]">
+              <Link href="/dashboard" onClick={() => setMenuOpen(false)}
+                className="flex-1 flex items-center justify-center gap-2 bg-[#E8F8F9] text-[#1CABB4] font-semibold py-2.5 rounded-xl text-sm">
+                <div className="w-6 h-6 bg-[#1CABB4] rounded-full flex items-center justify-center text-white text-xs font-bold">
+                  {user.email?.[0].toUpperCase()}
+                </div>
+                {user.email?.split("@")[0]}
+              </Link>
+              <button onClick={handleLogout}
+                className="px-4 py-2.5 border border-[#EF4444]/30 text-[#EF4444] font-semibold rounded-xl text-sm hover:bg-[#FEF2F2] transition-colors">
+                Keluar
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2 pt-2 border-t border-[#EAF5E4]">
+              <Link href="/login" onClick={() => setMenuOpen(false)}
+                className="flex-1 text-center py-2.5 border border-[#1CABB4] text-[#1CABB4] font-semibold rounded-xl text-sm hover:bg-[#E8F8F9] transition-colors">
+                Masuk
+              </Link>
+              <Link href="/register" onClick={() => setMenuOpen(false)}
+                className="flex-1 text-center py-2.5 bg-[#1CABB4] text-white font-semibold rounded-xl text-sm hover:bg-[#178E96] transition-colors">
+                Daftar
+              </Link>
+            </div>
+          )}
+
           <Link href="/seller" onClick={() => setMenuOpen(false)}
             className="flex items-center justify-center gap-2 border border-[#D4EAC8] text-[#4A7A6D] hover:border-[#1CABB4] hover:text-[#1CABB4] font-semibold py-2.5 rounded-xl text-sm transition-colors">
             <Store size={15} /> Daftarkan Vendor

@@ -1,70 +1,127 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [show, setShow] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      setError(error.message === "Invalid login credentials"
+        ? "Email atau password salah"
+        : error.message);
+      setLoading(false);
+      return;
+    }
+
+    router.push("/dashboard");
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-10 bg-gradient-to-br from-[#E8F8F9] via-[#F8FAFC] to-[#F5FAF0]">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-[#1CABB4] rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-[0_8px_24px_rgba(28,171,180,0.3)]">
-            <span className="text-white font-extrabold text-2xl">PN</span>
-          </div>
-          <h1 className="text-2xl font-extrabold text-[#1F2937]" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Selamat Datang!</h1>
-          <p className="text-sm text-[#9CA3AF] mt-1">Masuk ke akun PasarNusantara-mu</p>
-        </div>
+        <div className="bg-white rounded-3xl shadow-[0_8px_40px_rgba(28,171,180,0.15)] p-8">
 
-        <div className="bg-white rounded-3xl shadow-[0_8px_40px_rgba(0,0,0,0.10)] p-7">
-          {/* Social login */}
-          <div className="flex flex-col gap-3 mb-6">
-            <button className="w-full flex items-center justify-center gap-3 border-2 border-[#E5E7EB] py-3 rounded-2xl text-sm font-semibold text-[#1F2937] hover:border-[#1CABB4] hover:bg-[#E8F8F9] transition-all">
-              <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-              Lanjut dengan Google
-            </button>
+          {/* Logo */}
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <img src="/logo/festara-icon-color.png" alt="Festara" className="h-10 w-auto" />
+            <span className="text-2xl font-bold text-[#16302e]"
+              style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", letterSpacing: "-0.03em" }}>
+              festara
+            </span>
           </div>
 
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px bg-[#E5E7EB]" />
-            <span className="text-xs text-[#9CA3AF]">atau masuk dengan email</span>
-            <div className="flex-1 h-px bg-[#E5E7EB]" />
-          </div>
+          <h1 className="text-xl font-bold text-[#1A3A3C] text-center mb-1"
+            style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
+            Selamat Datang Kembali
+          </h1>
+          <p className="text-sm text-[#8ABDB5] text-center mb-8">
+            Masuk ke akun Festara kamu
+          </p>
 
-          <div className="space-y-4 mb-6">
-            <div>
-              <label className="text-xs font-semibold text-[#6B7280] block mb-1.5">Email</label>
-              <input type="email" placeholder="kamu@email.com"
-                className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl px-4 py-3 text-sm text-[#1F2937] outline-none focus:border-[#1CABB4] transition-colors" />
+          {error && (
+            <div className="bg-[#FEF2F2] border border-[#EF4444]/20 rounded-xl px-4 py-3 mb-5">
+              <p className="text-sm text-[#EF4444]">{error}</p>
             </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="text-xs font-semibold text-[#6B7280] block mb-1.5">Kata Sandi</label>
+              <label className="text-xs font-semibold text-[#4A7A6D] block mb-1.5">Email</label>
               <div className="relative">
-                <input type={show ? "text" : "password"} placeholder="Masukkan kata sandi"
-                  className="w-full bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl px-4 py-3 pr-12 text-sm text-[#1F2937] outline-none focus:border-[#1CABB4] transition-colors" />
-                <button onClick={() => setShow(!show)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280]">
-                  {show ? <EyeOff size={17} /> : <Eye size={17} />}
+                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8ABDB5]" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="nama@email.com"
+                  required
+                  className="w-full bg-[#F0FBF5] border border-[#D4EAC8] rounded-xl pl-10 pr-4 py-3 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] focus:shadow-[0_0_0_3px_rgba(28,171,180,0.15)]"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-[#4A7A6D] block mb-1.5">Password</label>
+              <div className="relative">
+                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8ABDB5]" />
+                <input
+                  type={showPass ? "text" : "password"}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Masukkan password"
+                  required
+                  className="w-full bg-[#F0FBF5] border border-[#D4EAC8] rounded-xl pl-10 pr-10 py-3 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] focus:shadow-[0_0_0_3px_rgba(28,171,180,0.15)]"
+                />
+                <button type="button" onClick={() => setShowPass(!showPass)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8ABDB5] hover:text-[#1CABB4]">
+                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-[#6B7280] cursor-pointer">
-                <input type="checkbox" className="w-4 h-4 rounded accent-[#1CABB4]" />
-                Ingat saya
-              </label>
-              <a href="#" className="text-sm text-[#1CABB4] font-semibold hover:underline">Lupa kata sandi?</a>
+
+            <div className="flex justify-end">
+              <Link href="/forgot-password" className="text-xs text-[#1CABB4] hover:underline">
+                Lupa password?
+              </Link>
             </div>
+
+            <button type="submit" disabled={loading}
+              className="w-full bg-[#1CABB4] hover:bg-[#178E96] disabled:opacity-70 text-white font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2">
+              {loading
+                ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Masuk...</>
+                : "Masuk"}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-[#8ABDB5]">
+              Belum punya akun?{" "}
+              <Link href="/register" className="text-[#1CABB4] font-semibold hover:underline">
+                Daftar sekarang
+              </Link>
+            </p>
           </div>
 
-          <button className="w-full flex items-center justify-center gap-2 bg-[#1CABB4] hover:bg-[#178E96] text-white font-bold py-4 rounded-2xl transition-colors">
-            Masuk <ArrowRight size={16} />
-          </button>
-
-          <p className="text-center text-sm text-[#9CA3AF] mt-5">
-            Belum punya akun?{" "}
-            <Link href="/register" className="text-[#1CABB4] font-bold hover:underline">Daftar Sekarang</Link>
-          </p>
+          <div className="mt-4 text-center">
+            <Link href="/seller" className="text-xs text-[#4A7A6D] hover:text-[#1CABB4]">
+              Daftarkan sebagai Vendor →
+            </Link>
+          </div>
         </div>
       </div>
     </div>
