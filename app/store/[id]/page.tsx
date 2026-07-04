@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Star, MapPin, BadgeCheck, MessageCircle, Heart, Share2, ChevronLeft, ChevronRight, Check, Camera } from "lucide-react";
 import { vendors, formatPrice } from "@/data";
 import { useAuth } from "@/lib/useAuth";
+import { useWishlist } from "@/lib/useWishlist";
 import LoginPromptModal from "@/components/LoginPromptModal";
 
 const MONTHS = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
@@ -15,20 +16,16 @@ function MiniCalendar({ onSelect }: { onSelect?: (date: string) => void }) {
   const [month, setMonth] = useState(today.getMonth());
   const [year, setYear] = useState(today.getFullYear());
   const [selected, setSelected] = useState<number | null>(null);
-
   const bookedDays = [3, 7, 14, 21, 28];
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-
   const prev = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); };
   const next = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); };
-
   const handleSelect = (day: number) => {
     setSelected(day);
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     onSelect?.(dateStr);
   };
-
   return (
     <div className="bg-white rounded-2xl border border-[#D4EAC8] p-4">
       <div className="flex items-center justify-between mb-3">
@@ -67,13 +64,11 @@ function MiniCalendar({ onSelect }: { onSelect?: (date: string) => void }) {
 }
 
 const TABS = ["Profil", "Paket", "Portofolio", "Ulasan", "Ketersediaan"];
-
 const PACKAGES = [
   { name: "Paket Basic", desc: "Dokumentasi 1 hari | 3 fotografer | 100 foto editing", price: 3500000, popular: false },
   { name: "Paket Silver", desc: "Dokumentasi 1 hari | 5 fotografer | 200 foto + album", price: 5500000, popular: true },
   { name: "Paket Premium", desc: "Dokumentasi 2 hari | 7 fotografer | 300 foto + video", price: 9000000, popular: false },
 ];
-
 const PORTFOLIO_IMGS = [
   "https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=300&fit=crop",
   "https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=400&h=300&fit=crop",
@@ -82,20 +77,19 @@ const PORTFOLIO_IMGS = [
   "https://images.unsplash.com/photo-1583939411023-14783179e581?w=400&h=300&fit=crop",
   "https://images.unsplash.com/photo-1529636798458-92182e662485?w=400&h=300&fit=crop",
 ];
-
 const REVIEWS = [
-  { name: "Dewi Santika", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=dewi", rating: 5, date: "20 Jun 2025", comment: "Hasilnya luar biasa! Foto-foto sangat natural dan elegan. Tim sangat profesional dan ramah selama sesi foto." },
-  { name: "Budi Prasetyo", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=budi", rating: 5, date: "12 Jun 2025", comment: "Sangat puas! Prewedding kami terasa seperti di majalah. Highly recommended buat yang cari fotografer profesional." },
-  { name: "Anita Lestari", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=anita", rating: 4, date: "5 Jun 2025", comment: "Hasilnya bagus, komunikasi responsif. Hanya sedikit terlambat di hari H tapi overall memuaskan." },
+  { name: "Dewi Santika", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=dewi", rating: 5, date: "20 Jun 2025", comment: "Hasilnya luar biasa! Foto-foto sangat natural dan elegan." },
+  { name: "Budi Prasetyo", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=budi", rating: 5, date: "12 Jun 2025", comment: "Sangat puas! Prewedding kami terasa seperti di majalah." },
+  { name: "Anita Lestari", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=anita", rating: 4, date: "5 Jun 2025", comment: "Hasilnya bagus, komunikasi responsif." },
 ];
 
 export default function VendorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const { user } = useAuth();
+  const { toggle, isWished } = useWishlist();
   const vendor = vendors.find(v => v.id === id) || vendors[0];
   const [tab, setTab] = useState("Profil");
-  const [wished, setWished] = useState(false);
   const [selectedPkg, setSelectedPkg] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -104,12 +98,10 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
     if (!user) { setShowLoginModal(true); return; }
     router.push("/chat");
   };
-
   const handleChat = () => {
     if (!user) { setShowLoginModal(true); return; }
     router.push("/chat");
   };
-
   const handleDateSelect = (date: string) => {
     setSelectedDate(date);
     if (!user) { setTimeout(() => setShowLoginModal(true), 300); return; }
@@ -128,8 +120,9 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
           <ChevronLeft size={13} /> Kembali
         </Link>
         <div className="absolute top-4 right-4 flex gap-2">
-          <button onClick={() => setWished(!wished)} className="w-9 h-9 bg-white/90 backdrop-blur rounded-xl flex items-center justify-center hover:bg-white transition-colors">
-            <Heart size={16} className={wished ? "fill-[#EF4444] text-[#EF4444]" : "text-[#4A7A6D]"} />
+          <button onClick={() => toggle(vendor.id)}
+            className="w-9 h-9 bg-white/90 backdrop-blur rounded-xl flex items-center justify-center hover:bg-white transition-colors">
+            <Heart size={16} className={isWished(vendor.id) ? "fill-[#EF4444] text-[#EF4444]" : "text-[#4A7A6D]"} />
           </button>
           <button className="w-9 h-9 bg-white/90 backdrop-blur rounded-xl flex items-center justify-center hover:bg-white transition-colors">
             <Share2 size={16} className="text-[#4A7A6D]" />
@@ -137,7 +130,7 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
         </div>
       </div>
 
-      {/* Vendor Header Card */}
+      {/* Header Card */}
       <div className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.08)] p-5 mb-5 -mt-10 relative z-10 mx-2">
         <div className="flex items-start gap-4">
           <div className="w-20 h-20 rounded-2xl border-4 border-white shadow-lg overflow-hidden flex-shrink-0 -mt-10 bg-white">
@@ -181,13 +174,11 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
           <div className="md:col-span-2 space-y-5">
             <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5">
               <h2 className="font-bold text-[#1A3A3C] mb-3">Tentang Kami</h2>
-              <p className="text-sm text-[#4A7A6D] leading-relaxed mb-4">{vendor.description} Kami berkomitmen memberikan dokumentasi terbaik untuk momen spesial Anda dengan sentuhan artistik dan profesional.</p>
+              <p className="text-sm text-[#4A7A6D] leading-relaxed mb-4">{vendor.description}</p>
               <div className="space-y-2">
-                {["Fotografer berpengalaman lebih dari 5 tahun", "Peralatan kamera profesional terkini", "Edit foto natural & cinematic", "Pengiriman hasil tepat waktu"].map(item => (
+                {["Fotografer berpengalaman lebih dari 5 tahun","Peralatan kamera profesional terkini","Edit foto natural & cinematic","Pengiriman hasil tepat waktu"].map(item => (
                   <div key={item} className="flex items-center gap-2.5 text-sm text-[#4A7A6D]">
-                    <div className="w-5 h-5 rounded-full bg-[#E8F8F9] flex items-center justify-center flex-shrink-0">
-                      <Check size={11} className="text-[#1CABB4]" />
-                    </div>
+                    <div className="w-5 h-5 rounded-full bg-[#E8F8F9] flex items-center justify-center flex-shrink-0"><Check size={11} className="text-[#1CABB4]" /></div>
                     {item}
                   </div>
                 ))}
@@ -196,9 +187,7 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
             <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5">
               <h2 className="font-bold text-[#1A3A3C] mb-3">Spesialisasi</h2>
               <div className="flex flex-wrap gap-2">
-                {vendor.tags.map(tag => (
-                  <span key={tag} className="text-sm bg-[#E8F8F9] text-[#1CABB4] font-medium px-3 py-1.5 rounded-xl">{tag}</span>
-                ))}
+                {vendor.tags.map(tag => <span key={tag} className="text-sm bg-[#E8F8F9] text-[#1CABB4] font-medium px-3 py-1.5 rounded-xl">{tag}</span>)}
               </div>
             </div>
           </div>
@@ -207,18 +196,12 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
               <h2 className="font-bold text-[#1A3A3C] mb-1">Pilih Tanggal Acara</h2>
               <p className="text-xs text-[#8ABDB5] mb-3">Klik tanggal → langsung ke booking</p>
               <MiniCalendar onSelect={handleDateSelect} />
-              {selectedDate && (
-                <p className="text-xs text-center text-[#1CABB4] font-semibold mt-2 animate-pulse">
-                  {user ? "Mengarahkan ke booking..." : "Silakan login dulu..."}
-                </p>
-              )}
+              {selectedDate && <p className="text-xs text-center text-[#1CABB4] font-semibold mt-2 animate-pulse">{user ? "Mengarahkan ke booking..." : "Silakan login dulu..."}</p>}
             </div>
             <div className="bg-gradient-to-br from-[#E8F8F9] to-[#F5FAF0] rounded-2xl p-4 border border-[#DBEBC9]">
               <p className="text-xs text-[#4A7A6D] mb-1">Mulai dari</p>
               <p className="text-xl font-extrabold text-[#1CABB4] mb-3">{formatPrice(vendor.price)}</p>
-              <button onClick={handleBooking} className="w-full bg-[#1CABB4] text-white text-sm font-bold text-center py-3 rounded-xl hover:bg-[#178E96] transition-colors">
-                Booking Sekarang
-              </button>
+              <button onClick={handleBooking} className="w-full bg-[#1CABB4] text-white text-sm font-bold text-center py-3 rounded-xl hover:bg-[#178E96] transition-colors">Booking Sekarang</button>
             </div>
           </div>
         </div>
@@ -275,7 +258,7 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {PORTFOLIO_IMGS.map((img, i) => (
               <div key={i} className="relative aspect-[4/3] rounded-2xl overflow-hidden group cursor-pointer">
-                <img src={img} alt={`Portfolio ${i + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <img src={img} alt={`Portfolio ${i+1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
               </div>
             ))}
@@ -292,19 +275,17 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
                 <div className="text-center">
                   <div className="text-4xl font-extrabold text-[#1CABB4]">{vendor.rating}</div>
                   <div className="flex gap-0.5 mt-1 justify-center">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} size={14} fill={i < Math.floor(vendor.rating) ? "#F59E0B" : "transparent"} className={i < Math.floor(vendor.rating) ? "text-[#F59E0B]" : "text-[#EAF5E4]"} />
-                    ))}
+                    {Array.from({length: 5}).map((_, i) => <Star key={i} size={14} fill={i < Math.floor(vendor.rating) ? "#F59E0B" : "transparent"} className={i < Math.floor(vendor.rating) ? "text-[#F59E0B]" : "text-[#EAF5E4]"} />)}
                   </div>
                   <p className="text-xs text-[#8ABDB5] mt-1">{vendor.reviewCount} ulasan</p>
                 </div>
                 <div className="flex-1 space-y-1.5">
-                  {[5, 4, 3, 2, 1].map(star => (
+                  {[5,4,3,2,1].map(star => (
                     <div key={star} className="flex items-center gap-2">
                       <span className="text-xs text-[#8ABDB5] w-3">{star}</span>
                       <Star size={10} fill="#F59E0B" className="text-[#F59E0B]" />
                       <div className="flex-1 bg-[#EAF5E4] rounded-full h-1.5 overflow-hidden">
-                        <div className="h-full bg-[#F59E0B] rounded-full" style={{ width: `${star === 5 ? 70 : star === 4 ? 20 : star === 3 ? 7 : 3}%` }} />
+                        <div className="h-full bg-[#F59E0B] rounded-full" style={{ width: `${star===5?70:star===4?20:star===3?7:3}%` }} />
                       </div>
                     </div>
                   ))}
@@ -320,7 +301,7 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
                         <span className="text-xs text-[#8ABDB5]">{r.date}</span>
                       </div>
                       <div className="flex gap-0.5 mb-1.5">
-                        {Array.from({ length: r.rating }).map((_, j) => <Star key={j} size={11} fill="#F59E0B" className="text-[#F59E0B]" />)}
+                        {Array.from({length: r.rating}).map((_,j) => <Star key={j} size={11} fill="#F59E0B" className="text-[#F59E0B]" />)}
                       </div>
                       <p className="text-sm text-[#4A7A6D] leading-relaxed">{r.comment}</p>
                     </div>
@@ -333,9 +314,7 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
             <div className="bg-gradient-to-br from-[#E8F8F9] to-[#F5FAF0] rounded-2xl p-4 border border-[#DBEBC9]">
               <p className="text-xs text-[#4A7A6D] mb-1">Mulai dari</p>
               <p className="text-xl font-extrabold text-[#1CABB4] mb-3">{formatPrice(vendor.price)}</p>
-              <button onClick={handleBooking} className="w-full bg-[#1CABB4] text-white text-sm font-bold text-center py-3 rounded-xl hover:bg-[#178E96] transition-colors">
-                Booking Sekarang
-              </button>
+              <button onClick={handleBooking} className="w-full bg-[#1CABB4] text-white text-sm font-bold text-center py-3 rounded-xl hover:bg-[#178E96] transition-colors">Booking Sekarang</button>
             </div>
           </div>
         </div>
@@ -346,13 +325,9 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
         <div className="grid md:grid-cols-2 gap-5">
           <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5">
             <h2 className="font-bold text-[#1A3A3C] mb-1">Pilih Tanggal Acara</h2>
-            <p className="text-xs text-[#8ABDB5] mb-3">Klik tanggal yang tersedia → langsung ke booking</p>
+            <p className="text-xs text-[#8ABDB5] mb-3">Klik tanggal → langsung ke booking</p>
             <MiniCalendar onSelect={handleDateSelect} />
-            {selectedDate && (
-              <p className="text-xs text-center text-[#1CABB4] font-semibold mt-2 animate-pulse">
-                {user ? "Mengarahkan ke booking..." : "Silakan login dulu..."}
-              </p>
-            )}
+            {selectedDate && <p className="text-xs text-center text-[#1CABB4] font-semibold mt-2 animate-pulse">{user ? "Mengarahkan ke booking..." : "Silakan login dulu..."}</p>}
           </div>
           <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5">
             <h2 className="font-bold text-[#1A3A3C] mb-4">Informasi Ketersediaan</h2>

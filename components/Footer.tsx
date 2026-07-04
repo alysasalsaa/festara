@@ -1,5 +1,31 @@
 import { Link2, MessageCircle, PlayCircle, Globe, Mail, Phone } from "lucide-react";
 
+const CATEGORY_LINKS = [
+  { label: "Wedding Organizer", href: "/search?cat=wedding-organizer" },
+  { label: "Event Organizer", href: "/search?cat=event-organizer" },
+  { label: "Fotografer", href: "/search?cat=photographer" },
+  { label: "Venue", href: "/search?cat=venue" },
+  { label: "Dekorasi", href: "/search?cat=dekorasi" },
+  { label: "Merchandise Wisuda", href: "/search?cat=merchandise-wisuda" },
+  { label: "Catering", href: "/search?cat=catering" },
+];
+
+const VENDOR_LINKS = [
+  { label: "Daftarkan Vendor", href: "/register" },
+  { label: "Dashboard Vendor", href: "/seller" },
+  { label: "Panduan Booking", href: "/help" },
+  { label: "Sistem Escrow", href: "/help" },
+  { label: "Komunitas", href: "/help" },
+];
+
+const HELP_LINKS = [
+  { label: "Pusat Bantuan", href: "/help" },
+  { label: "Cara Booking", href: "/help" },
+  { label: "Cara Pembayaran", href: "/help" },
+  { label: "Lacak Pesanan", href: "/dashboard" },
+  { label: "Kebijakan Privasi", href: "/help" },
+];
+
 export default function Footer() {
   return (
     <footer className="bg-[#16302e] text-white hidden md:block">
@@ -10,7 +36,7 @@ export default function Footer() {
               <img
                 src="/logo/festara-icon-color.png"
                 alt="Festara"
-                className="h-9 w-auto object-contain brightness-0 invert"
+                className="h-9 w-auto object-contain"
               />
               <span className="text-xl font-bold text-white"
                 style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", letterSpacing: "-0.03em" }}>
@@ -30,33 +56,56 @@ export default function Footer() {
             </div>
           </div>
 
-          {[
-            { title: "Kategori", links: ["Wedding Organizer", "Event Organizer", "Fotografer", "Venue", "Dekorasi", "Merchandise Wisuda", "Catering"] },
-            { title: "Vendor", links: ["Daftarkan Vendor", "Dashboard Vendor", "Panduan Booking", "Sistem Escrow", "Komunitas"] },
-            { title: "Bantuan", links: ["Pusat Bantuan", "Cara Booking", "Cara Pembayaran", "Lacak Pesanan", "Kebijakan Privasi"] },
-          ].map(col => (
-            <div key={col.title}>
-              <h4 className="font-bold mb-4 text-sm text-[#DBEBC9]">{col.title}</h4>
-              <ul className="space-y-2.5">
-                {col.links.map(link => (
-                  <li key={link}>
-                    <a href="#" className="text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors">
-                      {link}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {/* Kategori */}
+          <div>
+            <h4 className="font-bold mb-4 text-sm text-[#DBEBC9]">Kategori</h4>
+            <ul className="space-y-2.5">
+              {CATEGORY_LINKS.map(link => (
+                <li key={link.label}>
+                  <a href={link.href}
+                    className="text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors">
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Vendor */}
+          <div>
+            <h4 className="font-bold mb-4 text-sm text-[#DBEBC9]">Vendor</h4>
+            <ul className="space-y-2.5">
+              {VENDOR_LINKS.map(link => (
+                <li key={link.label}>
+                  <a href={link.href}
+                    className="text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors">
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Bantuan */}
+          <div>
+            <h4 className="font-bold mb-4 text-sm text-[#DBEBC9]">Bantuan</h4>
+            <ul className="space-y-2.5">
+              {HELP_LINKS.map(link => (
+                <li key={link.label}>
+                  <a href={link.href}
+                    className="text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors">
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         <div className="border-t border-white/10 mt-10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <img
-              src="/logo/festara-logo-horizontal.png"
-              alt="Festara"
-              className="h-6 w-auto object-contain brightness-0 invert opacity-50"
-            />
+            <img src="/logo/festara-logo-horizontal.png" alt="Festara"
+              className="h-6 w-auto object-contain brightness-0 invert opacity-50" />
           </div>
           <p className="text-[#8ABDB5] text-xs">© 2026 Festara. Platform vendor pernikahan & event terpercaya.</p>
           <div className="flex items-center gap-4">

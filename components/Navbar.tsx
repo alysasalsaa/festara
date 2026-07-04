@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Search, Heart, Bell, User, Store, Menu, X, Calendar, ChevronDown } from "lucide-react";
@@ -20,8 +20,14 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
   const [searchVal, setSearchVal] = useState("");
+  const [unreadCount, setUnreadCount] = useState(0);
   const pathname = usePathname();
   const { user } = useAuth();
+
+  useEffect(() => {
+    const bookings = JSON.parse(localStorage.getItem("festara_bookings") || "[]");
+    setUnreadCount(bookings.length);
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -104,10 +110,16 @@ export default function Navbar() {
 
         {/* Right icons */}
         <div className="flex items-center gap-1 ml-auto lg:ml-0">
+          {/* Notifikasi */}
           <Link href="/notifications" className="relative p-2 rounded-xl hover:bg-[#E8F8F9] transition-colors">
             <Bell size={20} className="text-[#4A7A6D]" />
-            <span className="absolute top-1 right-1 w-4 h-4 bg-[#EF4444] rounded-full text-white text-[9px] font-bold flex items-center justify-center">3</span>
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 bg-[#EF4444] rounded-full text-white text-[9px] font-bold flex items-center justify-center">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
           </Link>
+
           <Link href="/wishlist" className="p-2 rounded-xl hover:bg-[#E8F8F9] transition-colors hidden md:flex">
             <Heart size={20} className="text-[#4A7A6D]" />
           </Link>
@@ -121,10 +133,10 @@ export default function Navbar() {
               <Link href="/dashboard"
                 className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#E8F8F9] transition-colors">
                 <div className="w-7 h-7 bg-[#1CABB4] rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                  {user.email?.[0].toUpperCase()}
+                  {(user.user_metadata?.full_name?.[0] || user.email?.[0] || "?").toUpperCase()}
                 </div>
-                <span className="text-sm font-semibold text-[#1A3A3C] hidden lg:block max-w-[100px] truncate">
-                  {user.email?.split("@")[0]}
+                <span className="text-xs font-semibold text-[#1A3A3C] hidden lg:block max-w-[100px] truncate">
+                  {user.user_metadata?.full_name?.split(" ")[0] || user.email?.split("@")[0]}
                 </span>
               </Link>
               <button onClick={handleLogout}
@@ -139,7 +151,7 @@ export default function Navbar() {
                 Masuk
               </Link>
               <Link href="/register"
-                className="items-center gap-1.5 bg-[#1CABB4] hover:bg-[#178E96] text-white text-xs font-semibold px-3 py-2 rounded-xl transition-colors flex">
+                className="flex items-center gap-1.5 bg-[#1CABB4] hover:bg-[#178E96] text-white text-xs font-semibold px-3 py-2 rounded-xl transition-colors">
                 Daftar
               </Link>
             </div>
@@ -209,9 +221,11 @@ export default function Navbar() {
               <Link href="/dashboard" onClick={() => setMenuOpen(false)}
                 className="flex-1 flex items-center justify-center gap-2 bg-[#E8F8F9] text-[#1CABB4] font-semibold py-2.5 rounded-xl text-sm">
                 <div className="w-6 h-6 bg-[#1CABB4] rounded-full flex items-center justify-center text-white text-xs font-bold">
-                  {user.email?.[0].toUpperCase()}
+                  {(user.user_metadata?.full_name?.[0] || user.email?.[0] || "?").toUpperCase()}
                 </div>
-                {user.email?.split("@")[0]}
+                <span className="truncate max-w-[100px]">
+                  {user.user_metadata?.full_name?.split(" ")[0] || user.email?.split("@")[0]}
+                </span>
               </Link>
               <button onClick={handleLogout}
                 className="px-4 py-2.5 border border-[#EF4444]/30 text-[#EF4444] font-semibold rounded-xl text-sm hover:bg-[#FEF2F2] transition-colors">

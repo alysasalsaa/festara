@@ -1,35 +1,22 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
-import { Star, ArrowRight, Shield, Clock, Award, Search, Lock, CheckCircle, MessageCircle, Calendar } from "lucide-react";
+import { Star, ArrowRight, Shield, Clock, Award, X, Store } from "lucide-react";
 import { motion } from "framer-motion";
 import HeroBanner from "@/components/HeroBanner";
 import AnimatedSection from "@/components/AnimatedSection";
 import CounterAnimation from "@/components/CounterAnimation";
 import NotificationToast from "@/components/NotificationToast";
-import CategoryIcon from "@/components/CategoryIcon";
+import VendorRegisterForm from "@/components/VendorRegisterForm";
+import { useAuth } from "@/lib/useAuth";
 import { vendors, categories, formatPrice } from "@/data";
 
 const STEPS = [
-  {
-    icon: <Search size={28} className="text-[#1CABB4]" />,
-    step: "1", title: "Cari Vendor", desc: "Temukan vendor sesuai kebutuhanmu"
-  },
-  {
-    icon: <MessageCircle size={28} className="text-[#1CABB4]" />,
-    step: "2", title: "Konsultasi", desc: "Diskusikan detail acara dengan vendor"
-  },
-  {
-    icon: <Calendar size={28} className="text-[#1CABB4]" />,
-    step: "3", title: "Booking", desc: "Pilih paket dan lakukan pemesanan"
-  },
-  {
-    icon: <Lock size={28} className="text-[#1CABB4]" />,
-    step: "4", title: "Pembayaran Aman", desc: "Transaksi aman dengan sistem escrow"
-  },
-  {
-    icon: <CheckCircle size={28} className="text-[#1CABB4]" />,
-    step: "5", title: "Acara Selesai", desc: "Beri ulasan dan bagikan pengalamanmu"
-  },
+  { icon: "🔍", step: "1", title: "Cari Vendor", desc: "Temukan vendor sesuai kebutuhanmu" },
+  { icon: "💬", step: "2", title: "Konsultasi", desc: "Diskusikan detail acara dengan vendor" },
+  { icon: "📅", step: "3", title: "Booking", desc: "Pilih paket dan lakukan pemesanan" },
+  { icon: "🔒", step: "4", title: "Pembayaran Aman", desc: "Transaksi aman dengan sistem escrow" },
+  { icon: "🎉", step: "5", title: "Acara Selesai", desc: "Beri ulasan dan bagikan pengalamanmu" },
 ];
 
 const TESTIMONIALS = [
@@ -39,9 +26,78 @@ const TESTIMONIALS = [
 ];
 
 export default function HomePage() {
+  const { user } = useAuth();
+  const [showVendorModal, setShowVendorModal] = useState(false);
+  const [vendorApplied, setVendorApplied] = useState(false);
+
   return (
     <div className="space-y-8 py-4">
       <NotificationToast />
+
+      {/* Modal Daftar Vendor */}
+      {showVendorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ background: "rgba(0,0,0,0.45)" }}>
+          <div className="bg-white rounded-3xl shadow-[0_8px_40px_rgba(0,0,0,0.2)] p-6 max-w-md w-full relative max-h-[90vh] overflow-y-auto">
+            <button onClick={() => setShowVendorModal(false)}
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-xl hover:bg-[#F0FBF5]">
+              <X size={18} className="text-[#8ABDB5]" />
+            </button>
+            {vendorApplied ? (
+              <div className="text-center py-6">
+                <div className="text-5xl mb-4">🎉</div>
+                <h2 className="text-lg font-bold text-[#1A3A3C] mb-2"
+                  style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
+                  Pendaftaran Terkirim!
+                </h2>
+                <p className="text-sm text-[#4A7A6D] mb-5">
+                  Tim Festara akan meninjau pendaftaranmu dalam 1-3 hari kerja. Kamu akan mendapat notifikasi via email.
+                </p>
+                <button onClick={() => setShowVendorModal(false)}
+                  className="w-full bg-[#1CABB4] text-white font-bold py-3 rounded-xl hover:bg-[#178E96] transition-colors">
+                  Tutup
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="mb-5">
+                  <div className="w-12 h-12 bg-[#E8F8F9] rounded-2xl flex items-center justify-center mb-3">
+                    <Store size={22} className="text-[#1CABB4]" />
+                  </div>
+                  <h2 className="text-lg font-bold text-[#1A3A3C]"
+                    style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
+                    Daftarkan Vendor
+                  </h2>
+                  <p className="text-xs text-[#8ABDB5] mt-1">
+                    Isi data bisnis kamu untuk bergabung sebagai vendor Festara
+                  </p>
+                </div>
+                {user ? (
+                  <VendorRegisterForm onSuccess={() => setVendorApplied(true)} />
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-[#4A7A6D] mb-5">
+                      Kamu perlu login dulu sebelum mendaftarkan vendor
+                    </p>
+                    <div className="space-y-3">
+                      <a href="/login"
+                        className="block w-full bg-[#1CABB4] text-white font-bold py-3 rounded-xl hover:bg-[#178E96] transition-colors text-center">
+                        Masuk ke Akun
+                      </a>
+                      <a href="/register"
+                        className="block w-full border border-[#D4EAC8] text-[#4A7A6D] font-semibold py-3 rounded-xl hover:border-[#1CABB4] hover:text-[#1CABB4] transition-colors text-center">
+                        Daftar Gratis
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Hero */}
       <HeroBanner />
 
       {/* Stats */}
@@ -55,7 +111,8 @@ export default function HomePage() {
           ].map((stat, i) => (
             <motion.div key={stat.label} className="text-center"
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-              <p className="text-2xl md:text-3xl font-extrabold text-[#1CABB4]" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
+              <p className="text-2xl md:text-3xl font-extrabold text-[#1CABB4]"
+                style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
                 <CounterAnimation target={stat.value} suffix={stat.suffix} />
               </p>
               <p className="text-xs text-[#4A7A6D] mt-1">{stat.label}</p>
@@ -72,7 +129,7 @@ export default function HomePage() {
             Lihat Semua <ArrowRight size={14} />
           </Link>
         </div>
-        <div className="grid grid-cols-4 md:grid-cols-7 gap-3">
+        <div className="grid grid-cols-3 md:grid-cols-7 gap-3">
           {categories.map((cat, i) => (
             <motion.div key={cat.id}
               initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.06 }}
@@ -81,7 +138,7 @@ export default function HomePage() {
                 className="flex flex-col items-center gap-3 p-4 bg-white rounded-2xl hover:shadow-[0_8px_24px_rgba(28,171,180,0.15)] transition-all text-center group border border-[#EAF5E4]">
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
                   style={{ backgroundColor: cat.color + "12" }}>
-                  <CategoryIcon id={cat.id} color={cat.color} size={32} />
+                  <span className="font-bold text-lg" style={{ color: cat.color }}>{cat.name[0]}</span>
                 </div>
                 <p className="text-xs font-semibold text-[#1A3A3C] leading-tight group-hover:text-[#1CABB4] transition-colors">{cat.name}</p>
               </Link>
@@ -138,18 +195,16 @@ export default function HomePage() {
       {/* Cara Kerja */}
       <AnimatedSection className="max-w-7xl mx-auto px-4 md:px-6">
         <div className="bg-white/80 backdrop-blur rounded-3xl p-7 md:p-10">
-          <h2 className="text-xl md:text-2xl font-bold text-[#0D545A] text-center mb-2" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Cara Kerja Festara</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#0D545A] text-center mb-2"
+            style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Cara Kerja Festara</h2>
           <p className="text-center text-sm text-[#4A7A6D] mb-10">Proses mudah dari pencarian hingga acara selesai</p>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
             {STEPS.map((item, index) => (
               <motion.div key={item.step} className="flex flex-col items-center text-center relative"
                 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }} transition={{ delay: index * 0.1 }}>
-                {index < 4 && (
-                  <div className="hidden md:block absolute top-8 left-[60%] w-full h-[2px] bg-gradient-to-r from-[#1CABB4] to-[#DBEBC9] z-0" />
-                )}
-                <motion.div
-                  className="w-16 h-16 bg-white rounded-3xl shadow-[0_4px_16px_rgba(28,171,180,0.15)] flex items-center justify-center mb-3 relative z-10"
+                {index < 4 && <div className="hidden md:block absolute top-8 left-[60%] w-full h-[2px] bg-gradient-to-r from-[#1CABB4] to-[#DBEBC9] z-0" />}
+                <motion.div className="w-16 h-16 bg-white rounded-3xl shadow-[0_4px_16px_rgba(28,171,180,0.15)] flex items-center justify-center text-3xl mb-3 relative z-10"
                   whileHover={{ scale: 1.1, rotate: 5 }} transition={{ type: "spring", stiffness: 300 }}>
                   {item.icon}
                   <span className="absolute -top-2 -right-2 w-6 h-6 bg-[#1CABB4] text-white text-xs font-bold rounded-full flex items-center justify-center">{item.step}</span>
@@ -185,7 +240,8 @@ export default function HomePage() {
 
       {/* Testimonial */}
       <AnimatedSection className="max-w-7xl mx-auto px-4 md:px-6">
-        <h2 className="text-xl font-bold text-[#0D545A] mb-5 text-center" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Kata Mereka</h2>
+        <h2 className="text-xl font-bold text-[#0D545A] mb-5 text-center"
+          style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Kata Mereka</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {TESTIMONIALS.map((t, i) => (
             <motion.div key={t.name}
@@ -213,10 +269,13 @@ export default function HomePage() {
       <AnimatedSection className="max-w-7xl mx-auto px-4 md:px-6 pb-4">
         <motion.div className="bg-gradient-to-r from-[#0D545A] via-[#1CABB4] to-[#DBEBC9] rounded-3xl p-8 md:p-12 text-center"
           whileHover={{ scale: 1.01 }} transition={{ type: "spring", stiffness: 200 }}>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-3" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-3"
+            style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
             Siap Wujudkan Acara Impianmu?
           </h2>
-          <p className="text-white/80 mb-8 max-w-md mx-auto">Bergabung dengan ribuan pelanggan yang sudah mempercayakan momen spesial mereka ke Festara</p>
+          <p className="text-white/80 mb-8 max-w-md mx-auto">
+            Bergabung dengan ribuan pelanggan yang sudah mempercayakan momen spesial mereka ke Festara
+          </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
               <Link href="/search" className="inline-flex items-center gap-2 bg-white text-[#1CABB4] font-bold px-6 py-3.5 rounded-2xl hover:shadow-[0_8px_24px_rgba(0,0,0,0.15)] transition-shadow">
@@ -224,9 +283,10 @@ export default function HomePage() {
               </Link>
             </motion.div>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-              <Link href="/seller" className="inline-flex items-center gap-2 bg-white/20 backdrop-blur text-white font-bold px-6 py-3.5 rounded-2xl hover:bg-white/30 transition-colors border border-white/30">
+              <button onClick={() => setShowVendorModal(true)}
+                className="inline-flex items-center gap-2 bg-white/20 backdrop-blur text-white font-bold px-6 py-3.5 rounded-2xl hover:bg-white/30 transition-colors border border-white/30">
                 Daftarkan Vendor
-              </Link>
+              </button>
             </motion.div>
           </div>
         </motion.div>
