@@ -26,7 +26,7 @@ const bgColors: Record<string, string> = {
   system: "bg-blue-100",
 };
 
-const tabs = ["Semua", "Transaksi", "Promo", "Chat", "Sistem"];
+const tabs = ["Semua", "Transaksi", "Chat", "Sistem"];
 
 export default function NotificationsPage() {
   const { user } = useAuth();
@@ -34,28 +34,28 @@ export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState("Semua");
 
   useEffect(() => {
-    // Baca booking dari localStorage dan buat notifikasi dari sana
     const bookings = JSON.parse(localStorage.getItem("festara_bookings") || "[]");
     const bookingNotifs: Notif[] = bookings.map((b: any, i: number) => ({
       id: `booking-${i}`,
       type: "order",
       title: "Booking Berhasil!",
-      message: `Booking ${b.paket} — ${b.vendorName} untuk tanggal ${b.eventDate ? new Date(b.eventDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-"} sedang menunggu konfirmasi vendor.`,
+      message: `Booking ${b.paket} — ${b.vendorName} untuk tanggal ${
+        b.eventDate
+          ? new Date(b.eventDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+          : "-"
+      } sedang menunggu konfirmasi vendor.`,
       time: b.date || "Baru saja",
       isRead: false,
     }));
 
-    // Tambah notifikasi sistem welcome jika baru login
-    const systemNotifs: Notif[] = user ? [
-      {
-        id: "welcome",
-        type: "system",
-        title: "Selamat Datang di Festara!",
-        message: `Halo ${user.user_metadata?.full_name || user.email?.split("@")[0]}! Temukan vendor terbaik untuk acara spesialmu.`,
-        time: "Baru saja",
-        isRead: false,
-      }
-    ] : [];
+    const systemNotifs: Notif[] = user ? [{
+      id: "welcome",
+      type: "system",
+      title: "Selamat Datang di Festara!",
+      message: `Halo ${user.user_metadata?.full_name || user.email?.split("@")[0]}! Temukan vendor terbaik untuk acara spesialmu.`,
+      time: "Baru saja",
+      isRead: true,
+    }] : [];
 
     setNotifs([...bookingNotifs, ...systemNotifs]);
   }, [user]);
@@ -63,14 +63,12 @@ export default function NotificationsPage() {
   const filtered = notifs.filter(n => {
     if (activeTab === "Semua") return true;
     if (activeTab === "Transaksi") return n.type === "order";
-    if (activeTab === "Promo") return n.type === "promo";
     if (activeTab === "Chat") return n.type === "chat";
     if (activeTab === "Sistem") return n.type === "system";
     return true;
   });
 
   const unreadCount = notifs.filter(n => !n.isRead).length;
-
   const markAllRead = () => setNotifs(p => p.map(n => ({ ...n, isRead: true })));
   const deleteNotif = (id: string | number) => setNotifs(p => p.filter(n => n.id !== id));
   const markRead = (id: string | number) => setNotifs(p => p.map(n => n.id === id ? { ...n, isRead: true } : n));
@@ -79,7 +77,8 @@ export default function NotificationsPage() {
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-bold text-[#1A3A3C]" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
+          <h1 className="text-xl font-bold text-[#1A3A3C]"
+            style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
             Notifikasi
           </h1>
           {unreadCount > 0 && (
@@ -100,13 +99,14 @@ export default function NotificationsPage() {
       <div className="flex gap-2 overflow-x-auto pb-2 mb-5 scrollbar-hide">
         {tabs.map(t => (
           <button key={t} onClick={() => setActiveTab(t)}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${activeTab === t ? "bg-[#1CABB4] text-white" : "bg-white text-[#4A7A6D] hover:bg-[#E8F8F9] border border-[#D4EAC8]"}`}>
+            className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors
+              ${activeTab === t ? "bg-[#1CABB4] text-white" : "bg-white text-[#4A7A6D] hover:bg-[#E8F8F9] border border-[#D4EAC8]"}`}>
             {t}
           </button>
         ))}
       </div>
 
-      {/* Notifikasi list */}
+      {/* List */}
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-16 h-16 bg-[#E8F8F9] rounded-2xl flex items-center justify-center mb-4">
@@ -121,7 +121,7 @@ export default function NotificationsPage() {
             <div key={n.id} onClick={() => markRead(n.id)}
               className={`flex gap-4 p-4 rounded-2xl border transition-all cursor-pointer
                 ${!n.isRead
-                  ? "bg-white border-[#1CABB4]/30 shadow-[0_2px_12px_rgba(28,171,180,0.10)] border-l-4 border-l-[#1CABB4]"
+                  ? "bg-white border-l-4 border-l-[#1CABB4] border-[#1CABB4]/20 shadow-[0_2px_12px_rgba(28,171,180,0.10)]"
                   : "bg-white/60 border-[#D4EAC8]"}`}>
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${bgColors[n.type] || "bg-[#E8F8F9]"}`}>
                 {icons[n.type] || <Bell className="w-5 h-5 text-[#1CABB4]" />}
