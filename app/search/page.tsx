@@ -293,7 +293,7 @@ function SearchContent() {
                 </span>
               )}
             </span>
-            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-1">
               {SORT_OPTIONS.map(opt => (
                 <button key={opt.value} onClick={() => setSort(opt.value)}
                   className={`text-xs font-medium px-3 py-1.5 rounded-xl whitespace-nowrap transition-colors ${sort === opt.value ? "bg-[#1CABB4] text-white" : "text-[#4A7A6D] hover:bg-[#F0FBF5]"}`}>
