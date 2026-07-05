@@ -102,30 +102,33 @@ export default function HomePage() {
       </AnimatedSection>
 
       {/* Kategori */}
-      <AnimatedSection className="max-w-7xl mx-auto px-4 md:px-6">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-bold text-[#0D545A]" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Kategori Populer</h2>
-          <Link href="/search" className="text-sm text-[#1CABB4] font-semibold flex items-center gap-1 hover:gap-2 transition-all">
-            Lihat Semua <ArrowRight size={14} />
-          </Link>
-        </div>
-        <div className="grid grid-cols-3 md:grid-cols-7 gap-3">
-          {categories.map((cat, i) => (
-            <motion.div key={cat.id}
-              initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.06 }}
-              whileHover={{ scale: 1.05, y: -4 }} whileTap={{ scale: 0.97 }}>
-              <Link href={`/search?cat=${cat.id}`}
-                className="flex flex-col items-center gap-3 p-4 bg-white rounded-2xl hover:shadow-[0_8px_24px_rgba(28,171,180,0.15)] transition-all text-center group border border-[#EAF5E4]">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                  style={{ backgroundColor: cat.color + "12" }}>
-                  <CategoryIcon id={cat.id} color={cat.color} size={30} />
-                </div>
-                <p className="text-xs font-semibold text-[#1A3A3C] leading-tight group-hover:text-[#1CABB4] transition-colors">{cat.name}</p>
-              </Link>
-            </motion.div>
-          ))}
-        </div>
-      </AnimatedSection>
+<AnimatedSection className="max-w-7xl mx-auto px-4 md:px-6">
+  <div className="flex items-center justify-between mb-5">
+    <h2 className="text-xl font-bold text-[#0D545A]" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Kategori Populer</h2>
+    <Link href="/search" className="text-sm text-[#1CABB4] font-semibold flex items-center gap-1 hover:gap-2 transition-all">
+      Lihat Semua <ArrowRight size={14} />
+    </Link>
+  </div>
+  <div className="grid grid-cols-3 md:grid-cols-7 gap-3 auto-rows-fr">
+    {categories.map((cat, i) => (
+      <motion.div key={cat.id}
+        initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.06 }}
+        whileHover={{ scale: 1.05, y: -4 }} whileTap={{ scale: 0.97 }}
+        className="h-full">
+        <Link href={`/search?cat=${cat.id}`}
+          className="h-full flex flex-col items-center justify-start gap-3 p-4 bg-white rounded-2xl hover:shadow-[0_8px_24px_rgba(28,171,180,0.15)] transition-all text-center group border border-[#EAF5E4]">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: cat.color + "12" }}>
+            <CategoryIcon id={cat.id} color={cat.color} size={30} />
+          </div>
+          <p className="text-xs font-semibold text-[#1A3A3C] leading-tight group-hover:text-[#1CABB4] transition-colors flex items-center justify-center min-h-[2rem]">
+            {cat.name}
+          </p>
+        </Link>
+      </motion.div>
+    ))}
+  </div>
+</AnimatedSection>
 
       {/* Vendor Unggulan */}
       <AnimatedSection className="max-w-7xl mx-auto px-4 md:px-6">
