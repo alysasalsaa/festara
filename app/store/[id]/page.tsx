@@ -131,32 +131,47 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
       </div>
 
       {/* Header Card */}
-      <div className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.08)] p-5 mb-5 -mt-10 relative z-10 mx-2">
-        <div className="flex items-start gap-4">
-          <div className="w-20 h-20 rounded-2xl border-4 border-white shadow-lg overflow-hidden flex-shrink-0 -mt-10 bg-white">
-            <img src={vendor.logo} alt={vendor.name} className="w-full h-full object-cover" />
-          </div>
-          <div className="flex-1 min-w-0 pt-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="font-extrabold text-lg text-[#1A3A3C] leading-tight" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{vendor.name}</h1>
-              {vendor.isVerified && <BadgeCheck size={18} className="text-[#1CABB4]" />}
-            </div>
-            <div className="flex items-center gap-3 flex-wrap mt-1 text-xs text-[#4A7A6D]">
-              <span className="bg-[#E8F8F9] text-[#1CABB4] font-semibold px-2.5 py-0.5 rounded-full">{vendor.categoryLabel}</span>
-              <div className="flex items-center gap-1"><MapPin size={11} />{vendor.location}</div>
-              <div className="flex items-center gap-1"><Star size={11} fill="#F59E0B" className="text-[#F59E0B]" /><span className="font-semibold text-[#1A3A3C]">{vendor.rating}</span><span>({vendor.reviewCount} ulasan)</span></div>
-            </div>
-          </div>
-          <div className="flex gap-2 flex-shrink-0">
-            <button onClick={handleChat} className="flex items-center gap-1.5 text-xs font-semibold border border-[#D4EAC8] text-[#4A7A6D] hover:border-[#1CABB4] hover:text-[#1CABB4] px-3 py-2 rounded-xl transition-colors">
-              <MessageCircle size={13} /> Chat
-            </button>
-            <button onClick={handleBooking} className="flex items-center gap-1.5 text-xs font-bold bg-[#1CABB4] text-white px-4 py-2 rounded-xl hover:bg-[#178E96] transition-colors">
-              Booking Sekarang
-            </button>
-          </div>
+<div className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.08)] p-5 mb-5 -mt-10 relative z-10 mx-2">
+  <div className="flex flex-col md:flex-row md:items-start gap-4">
+    <div className="flex items-start gap-4">
+      <div className="w-20 h-20 rounded-2xl border-4 border-white shadow-lg overflow-hidden flex-shrink-0 -mt-10 bg-white">
+        <img src={vendor.logo} alt={vendor.name} className="w-full h-full object-cover" />
+      </div>
+      <div className="flex-1 min-w-0 pt-1 md:hidden">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h1 className="font-extrabold text-lg text-[#1A3A3C] leading-tight" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{vendor.name}</h1>
+          {vendor.isVerified && <BadgeCheck size={18} className="text-[#1CABB4] flex-shrink-0" />}
+        </div>
+        <div className="flex items-center gap-3 flex-wrap mt-1 text-xs text-[#4A7A6D]">
+          <span className="bg-[#E8F8F9] text-[#1CABB4] font-semibold px-2.5 py-0.5 rounded-full">{vendor.categoryLabel}</span>
+          <div className="flex items-center gap-1"><MapPin size={11} />{vendor.location}</div>
+          <div className="flex items-center gap-1"><Star size={11} fill="#F59E0B" className="text-[#F59E0B]" /><span className="font-semibold text-[#1A3A3C]">{vendor.rating}</span><span>({vendor.reviewCount} ulasan)</span></div>
         </div>
       </div>
+    </div>
+
+    <div className="flex-1 min-w-0 pt-1 hidden md:block">
+      <div className="flex items-center gap-2 flex-wrap">
+        <h1 className="font-extrabold text-lg text-[#1A3A3C] leading-tight" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{vendor.name}</h1>
+        {vendor.isVerified && <BadgeCheck size={18} className="text-[#1CABB4] flex-shrink-0" />}
+      </div>
+      <div className="flex items-center gap-3 flex-wrap mt-1 text-xs text-[#4A7A6D]">
+        <span className="bg-[#E8F8F9] text-[#1CABB4] font-semibold px-2.5 py-0.5 rounded-full">{vendor.categoryLabel}</span>
+        <div className="flex items-center gap-1"><MapPin size={11} />{vendor.location}</div>
+        <div className="flex items-center gap-1"><Star size={11} fill="#F59E0B" className="text-[#F59E0B]" /><span className="font-semibold text-[#1A3A3C]">{vendor.rating}</span><span>({vendor.reviewCount} ulasan)</span></div>
+      </div>
+    </div>
+
+    <div className="flex gap-2 flex-shrink-0 w-full md:w-auto">
+      <button onClick={handleChat} className="flex-1 md:flex-none flex items-center justify-center gap-1.5 text-xs font-semibold border border-[#D4EAC8] text-[#4A7A6D] hover:border-[#1CABB4] hover:text-[#1CABB4] px-3 py-2.5 rounded-xl transition-colors">
+        <MessageCircle size={13} /> Chat
+      </button>
+      <button onClick={handleBooking} className="flex-1 md:flex-none flex items-center justify-center gap-1.5 text-xs font-bold bg-[#1CABB4] text-white px-4 py-2.5 rounded-xl hover:bg-[#178E96] transition-colors">
+        Booking Sekarang
+      </button>
+    </div>
+  </div>
+</div>
 
       {/* Tabs */}
       <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] mb-5 flex overflow-x-auto scrollbar-hide">
