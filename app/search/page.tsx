@@ -1,11 +1,12 @@
 "use client";
 import { useState, useMemo, useEffect, Suspense } from "react";
-import { SlidersHorizontal, X, Search, ChevronDown, Star, MapPin, BadgeCheck, Heart, MessageSquarePlus } from "lucide-react";
+import { SlidersHorizontal, X, Search, ChevronDown, Star, MapPin, BadgeCheck, Heart } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { vendors, categories, formatPrice } from "@/data";
-import { useAuth } from "@/lib/useAuth";
 import { useWishlist } from "@/lib/useWishlist";
+import TestimonialsSection from "@/components/TestimonialsSection";
+import ReviewForm from "@/components/ReviewForm";
 
 const SORT_OPTIONS = [
   { value: "popular", label: "Terpopuler" },
@@ -23,16 +24,6 @@ const BUDGETS = [
   { label: "Rp5jt – Rp10jt", min: 5000000, max: 10000000 },
   { label: "> Rp10.000.000", min: 10000000, max: Infinity },
 ];
-
-interface Review {
-  id: string;
-  name: string;
-  avatar: string;
-  rating: number;
-  text: string;
-  event: string;
-  date: string;
-}
 
 function VendorListCard({ vendor }: { vendor: typeof vendors[0] }) {
   const { toggle, isWished } = useWishlist();
@@ -98,7 +89,6 @@ function VendorListCard({ vendor }: { vendor: typeof vendors[0] }) {
 
 function SearchContent() {
   const searchParams = useSearchParams();
-  const { user } = useAuth();
   const [sort, setSort] = useState("popular");
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedCat, setSelectedCat] = useState<string[]>(() => {
@@ -109,13 +99,7 @@ function SearchContent() {
   const [selectedLocation, setSelectedLocation] = useState("Semua Lokasi");
   const [minRating, setMinRating] = useState(0);
   const [search, setSearch] = useState(searchParams.get("q") || "");
-  const [reviews, setReviews] = useState<Review[]>(() => {
-    if (typeof window !== "undefined") return JSON.parse(localStorage.getItem("festara_reviews") || "[]");
-    return [];
-  });
-  const [showReviewForm, setShowReviewForm] = useState(false);
-  const [reviewForm, setReviewForm] = useState({ rating: 5, text: "", event: "" });
-  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [testimonialsKey, setTestimonialsKey] = useState(0);
 
   useEffect(() => {
     const cat = searchParams.get("cat");
@@ -144,32 +128,6 @@ function SearchContent() {
 
   const resetFilters = () => { setSelectedCat([]); setSelectedBudget(0); setSelectedLocation("Semua Lokasi"); setMinRating(0); setSearch(""); };
   const activeFilterCount = selectedCat.length + (selectedBudget > 0 ? 1 : 0) + (selectedLocation !== "Semua Lokasi" ? 1 : 0) + (minRating > 0 ? 1 : 0);
-
-  const handleSubmitReview = () => {
-    if (!reviewForm.text.trim() || !reviewForm.event.trim()) return;
-    const newReview: Review = {
-      id: Date.now().toString(),
-      name: user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Pengguna",
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id || "user"}`,
-      rating: reviewForm.rating,
-      text: reviewForm.text,
-      event: reviewForm.event,
-      date: new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }),
-    };
-    const updated = [newReview, ...reviews];
-    setReviews(updated);
-    localStorage.setItem("festara_reviews", JSON.stringify(updated));
-    setReviewSubmitted(true);
-    setReviewForm({ rating: 5, text: "", event: "" });
-    setTimeout(() => { setShowReviewForm(false); setReviewSubmitted(false); }, 2000);
-  };
-
-  const allReviews = [
-    ...reviews,
-    { id: "r1", name: "Anisa & Budi", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=anisa", rating: 5, text: "Festara sangat memudahkan proses booking vendor pernikahan kami!", event: "Wedding · Yogyakarta", date: "12 Jun 2026" },
-    { id: "r2", name: "Rina Sari", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=rina", rating: 5, text: "Dekorasi ultah impian akhirnya terwujud! Vendor dari Festara hasilnya luar biasa.", event: "Sweet 17 · Bandung", date: "5 Jun 2026" },
-    { id: "r3", name: "PT. Maju Bersama", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=maju", rating: 5, text: "Kami berhasil menemukan EO terbaik dalam waktu singkat. Sistemnya mudah!", event: "Corporate Event · Jakarta", date: "1 Jun 2026" },
-  ];
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-8">
@@ -328,86 +286,15 @@ function SearchContent() {
             </div>
           )}
 
-          {/* Kata Mereka */}
+          {/* Kata Mereka — data asli dari Supabase, sama dengan homepage */}
           <div className="bg-white rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-6">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h2 className="font-bold text-lg text-[#1A3A3C]" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Kata Mereka</h2>
-                <p className="text-xs text-[#8ABDB5] mt-0.5">Pengalaman nyata dari pengguna Festara</p>
-              </div>
-              {user ? (
-                <button onClick={() => setShowReviewForm(!showReviewForm)}
-                  className="flex items-center gap-2 bg-[#1CABB4] hover:bg-[#178E96] text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-colors">
-                  <MessageSquarePlus size={14} /> Tulis Reviewmu
-                </button>
-              ) : (
-                <Link href="/login"
-                  className="flex items-center gap-2 border border-[#D4EAC8] text-[#1CABB4] text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-[#E8F8F9] transition-colors">
-                  <MessageSquarePlus size={14} /> Login untuk Review
-                </Link>
-              )}
+            <div className="mb-5">
+              <h2 className="font-bold text-lg text-[#1A3A3C]" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Kata Mereka</h2>
+              <p className="text-xs text-[#8ABDB5] mt-0.5">Pengalaman nyata dari pengguna Festara</p>
             </div>
-
-            {showReviewForm && user && (
-              <div className="bg-[#F0FBF5] rounded-2xl p-4 mb-5 border border-[#D4EAC8]">
-                {reviewSubmitted ? (
-                  <div className="text-center py-4">
-                    <div className="text-3xl mb-2">🎉</div>
-                    <p className="font-bold text-[#1CABB4]">Review berhasil dikirim!</p>
-                    <p className="text-xs text-[#8ABDB5] mt-1">Terima kasih sudah berbagi pengalamanmu</p>
-                  </div>
-                ) : (
-                  <>
-                    <h3 className="font-bold text-sm text-[#1A3A3C] mb-3">Tulis Reviewmu</h3>
-                    <div className="flex items-center gap-1 mb-3">
-                      {[1,2,3,4,5].map(s => (
-                        <button key={s} onClick={() => setReviewForm(p => ({ ...p, rating: s }))}>
-                          <Star size={24} fill={s <= reviewForm.rating ? "#F59E0B" : "transparent"}
-                            className={s <= reviewForm.rating ? "text-[#F59E0B]" : "text-[#D4EAC8]"} />
-                        </button>
-                      ))}
-                      <span className="text-xs text-[#8ABDB5] ml-2">{reviewForm.rating}/5</span>
-                    </div>
-                    <input value={reviewForm.event} onChange={e => setReviewForm(p => ({ ...p, event: e.target.value }))}
-                      placeholder="Jenis acara (contoh: Wedding · Yogyakarta)"
-                      className="w-full bg-white border border-[#D4EAC8] rounded-xl px-3 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] mb-3 placeholder:text-[#8ABDB5]" />
-                    <textarea value={reviewForm.text} onChange={e => setReviewForm(p => ({ ...p, text: e.target.value }))}
-                      placeholder="Ceritakan pengalamanmu menggunakan Festara..." rows={3}
-                      className="w-full bg-white border border-[#D4EAC8] rounded-xl px-3 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] resize-none placeholder:text-[#8ABDB5] mb-3" />
-                    <div className="flex gap-2">
-                      <button onClick={handleSubmitReview}
-                        disabled={!reviewForm.text.trim() || !reviewForm.event.trim()}
-                        className="flex-1 bg-[#1CABB4] disabled:opacity-50 text-white text-sm font-bold py-2.5 rounded-xl hover:bg-[#178E96] transition-colors">
-                        Kirim Review
-                      </button>
-                      <button onClick={() => setShowReviewForm(false)}
-                        className="px-4 border border-[#D4EAC8] text-[#4A7A6D] text-sm font-semibold py-2.5 rounded-xl hover:bg-white transition-colors">
-                        Batal
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {allReviews.slice(0, 6).map(r => (
-                <div key={r.id} className="bg-[#F0FBF5] rounded-2xl p-4 border border-[#EAF5E4]">
-                  <div className="flex gap-0.5 mb-2">
-                    {Array.from({ length: r.rating }).map((_, j) => (
-                      <Star key={j} size={13} fill="#F59E0B" className="text-[#F59E0B]" />
-                    ))}
-                  </div>
-                  <p className="text-sm text-[#4A7A6D] leading-relaxed mb-3 line-clamp-3">"{r.text}"</p>
-                  <div className="flex items-center gap-2.5">
-                    <img src={r.avatar} alt={r.name} className="w-8 h-8 rounded-full bg-[#E8F8F9]" />
-                    <div>
-                      <p className="font-bold text-xs text-[#1A3A3C]">{r.name}</p>
-                      <p className="text-[10px] text-[#8ABDB5]">{r.event}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <TestimonialsSection key={testimonialsKey} />
+            <div className="mt-6">
+              <ReviewForm onSubmitted={() => setTestimonialsKey((k) => k + 1)} />
             </div>
           </div>
         </div>
