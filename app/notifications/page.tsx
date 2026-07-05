@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Bell, Package, Tag, MessageCircle, ShieldCheck, Trash2, CheckCheck } from "lucide-react";
+import { Bell, Package, MessageCircle, ShieldCheck, Trash2, CheckCheck } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 
 type Notif = {
@@ -14,14 +14,12 @@ type Notif = {
 
 const icons: Record<string, React.ReactNode> = {
   order:  <Package className="w-5 h-5 text-[#1CABB4]" />,
-  promo:  <Tag className="w-5 h-5 text-purple-500" />,
   chat:   <MessageCircle className="w-5 h-5 text-green-500" />,
   system: <ShieldCheck className="w-5 h-5 text-blue-500" />,
 };
 
 const bgColors: Record<string, string> = {
   order:  "bg-[#E8F8F9]",
-  promo:  "bg-purple-100",
   chat:   "bg-green-100",
   system: "bg-blue-100",
 };
@@ -35,13 +33,16 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     const bookings = JSON.parse(localStorage.getItem("festara_bookings") || "[]");
+
     const bookingNotifs: Notif[] = bookings.map((b: any, i: number) => ({
       id: `booking-${i}`,
       type: "order",
       title: "Booking Berhasil!",
       message: `Booking ${b.paket} — ${b.vendorName} untuk tanggal ${
         b.eventDate
-          ? new Date(b.eventDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+          ? new Date(b.eventDate).toLocaleDateString("id-ID", {
+              day: "numeric", month: "long", year: "numeric"
+            })
           : "-"
       } sedang menunggu konfirmasi vendor.`,
       time: b.date || "Baru saja",
@@ -100,7 +101,9 @@ export default function NotificationsPage() {
         {tabs.map(t => (
           <button key={t} onClick={() => setActiveTab(t)}
             className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors
-              ${activeTab === t ? "bg-[#1CABB4] text-white" : "bg-white text-[#4A7A6D] hover:bg-[#E8F8F9] border border-[#D4EAC8]"}`}>
+              ${activeTab === t
+                ? "bg-[#1CABB4] text-white"
+                : "bg-white text-[#4A7A6D] hover:bg-[#E8F8F9] border border-[#D4EAC8]"}`}>
             {t}
           </button>
         ))}
@@ -113,7 +116,9 @@ export default function NotificationsPage() {
             <Bell size={28} className="text-[#1CABB4]" />
           </div>
           <h3 className="font-bold text-[#1A3A3C] mb-2">Belum ada notifikasi</h3>
-          <p className="text-sm text-[#8ABDB5]">Notifikasi akan muncul setelah kamu melakukan booking</p>
+          <p className="text-sm text-[#8ABDB5]">
+            Notifikasi akan muncul setelah kamu melakukan booking
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
