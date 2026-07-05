@@ -5,7 +5,8 @@ import { Star, ArrowRight, Shield, Clock, Award, X, Store } from "lucide-react";
 import { motion } from "framer-motion";
 import HeroBanner from "@/components/HeroBanner";
 import AnimatedSection from "@/components/AnimatedSection";
-import CounterAnimation from "@/components/CounterAnimation";
+import StatsSection from "@/components/StatsSection";
+import CategoryIcon from "@/components/CategoryIcon";
 import NotificationToast from "@/components/NotificationToast";
 import VendorRegisterForm from "@/components/VendorRegisterForm";
 import { useAuth } from "@/lib/useAuth";
@@ -100,25 +101,9 @@ export default function HomePage() {
       {/* Hero */}
       <HeroBanner />
 
-      {/* Stats */}
+      {/* Stats — sekarang ambil data asli dari Supabase (lihat components/StatsSection.tsx) */}
       <AnimatedSection className="max-w-7xl mx-auto px-4 md:px-6">
-        <div className="bg-white/80 backdrop-blur rounded-3xl p-6 grid grid-cols-2 md:grid-cols-4 gap-6">
-          {[
-            { value: 1200, suffix: "+", label: "Vendor Terdaftar" },
-            { value: 8500, suffix: "+", label: "Booking Selesai" },
-            { value: 98, suffix: "%", label: "Kepuasan Klien" },
-            { value: 50, suffix: "+", label: "Kota di Indonesia" },
-          ].map((stat, i) => (
-            <motion.div key={stat.label} className="text-center"
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-              <p className="text-2xl md:text-3xl font-extrabold text-[#1CABB4]"
-                style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
-                <CounterAnimation target={stat.value} suffix={stat.suffix} />
-              </p>
-              <p className="text-xs text-[#4A7A6D] mt-1">{stat.label}</p>
-            </motion.div>
-          ))}
-        </div>
+        <StatsSection />
       </AnimatedSection>
 
       {/* Kategori */}
@@ -138,7 +123,7 @@ export default function HomePage() {
                 className="flex flex-col items-center gap-3 p-4 bg-white rounded-2xl hover:shadow-[0_8px_24px_rgba(28,171,180,0.15)] transition-all text-center group border border-[#EAF5E4]">
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
                   style={{ backgroundColor: cat.color + "12" }}>
-                  <span className="font-bold text-lg" style={{ color: cat.color }}>{cat.name[0]}</span>
+                  <CategoryIcon id={cat.id} color={cat.color} size={30} />
                 </div>
                 <p className="text-xs font-semibold text-[#1A3A3C] leading-tight group-hover:text-[#1CABB4] transition-colors">{cat.name}</p>
               </Link>
