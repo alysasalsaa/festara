@@ -18,12 +18,23 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (error) {
-      setError(error.message === "Invalid login credentials"
-        ? "Email atau password salah"
-        : error.message);
+    if (loginError) {
+      if (loginError.message === "Invalid login credentials") {
+        const { data: emailExists, error: checkError } = await supabase.rpc(
+          "check_email_exists",
+          { check_email: email }
+        );
+
+        if (!checkError && emailExists === false) {
+          setError("Email belum terdaftar");
+        } else {
+          setError("Password salah");
+        }
+      } else {
+        setError(loginError.message);
+      }
       setLoading(false);
       return;
     }
