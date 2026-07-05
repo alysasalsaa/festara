@@ -8,6 +8,7 @@ import AnimatedSection from "@/components/AnimatedSection";
 import StatsSection from "@/components/StatsSection";
 import CategoryIcon from "@/components/CategoryIcon";
 import TestimonialsSection from "@/components/TestimonialsSection";
+import ReviewForm from "@/components/ReviewForm";
 import NotificationToast from "@/components/NotificationToast";
 import VendorRegisterForm from "@/components/VendorRegisterForm";
 import { useAuth } from "@/lib/useAuth";
@@ -25,6 +26,7 @@ export default function HomePage() {
   const { user } = useAuth();
   const [showVendorModal, setShowVendorModal] = useState(false);
   const [vendorApplied, setVendorApplied] = useState(false);
+  const [testimonialsKey, setTestimonialsKey] = useState(0);
 
   return (
     <div className="space-y-8 py-4">
@@ -225,7 +227,10 @@ export default function HomePage() {
       <AnimatedSection className="max-w-7xl mx-auto px-4 md:px-6">
         <h2 className="text-xl font-bold text-[#0D545A] mb-5 text-center"
           style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Kata Mereka</h2>
-        <TestimonialsSection />
+        <TestimonialsSection key={testimonialsKey} />
+        <div className="mt-8">
+          <ReviewForm onSubmitted={() => setTestimonialsKey((k) => k + 1)} />
+        </div>
       </AnimatedSection>
 
       {/* CTA */}
