@@ -142,7 +142,7 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
           <h1 className="font-extrabold text-lg text-[#1A3A3C] leading-tight" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{vendor.name}</h1>
           {vendor.isVerified && <BadgeCheck size={18} className="text-[#1CABB4] flex-shrink-0" />}
         </div>
-        <div className="flex items-center gap-3 flex-wrap mt-1.5 text-xs text-[#4A7A6D] leading-none">
+        <div className="flex items-center gap-3 flex-wrap mt-2.5 text-xs text-[#4A7A6D] leading-none">
   <span className="inline-flex items-center bg-[#E8F8F9] text-[#1CABB4] font-semibold px-2.5 py-1 rounded-full leading-none">{vendor.categoryLabel}</span>
   <div className="inline-flex items-center gap-1 leading-none"><MapPin size={11} className="flex-shrink-0" />{vendor.location}</div>
   <div className="inline-flex items-center gap-1 leading-none"><Star size={11} fill="#F59E0B" className="text-[#F59E0B] flex-shrink-0" /><span className="font-semibold text-[#1A3A3C]">{vendor.rating}</span><span>({vendor.reviewCount} ulasan)</span></div>
@@ -155,7 +155,7 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
         <h1 className="font-extrabold text-lg text-[#1A3A3C] leading-tight" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{vendor.name}</h1>
         {vendor.isVerified && <BadgeCheck size={18} className="text-[#1CABB4] flex-shrink-0" />}
       </div>
-      <div className="flex items-center gap-3 flex-wrap mt-1.5 text-xs text-[#4A7A6D] leading-none">
+      <div className="flex items-center gap-3 flex-wrap mt-2.5 text-xs text-[#4A7A6D] leading-none">
   <span className="inline-flex items-center bg-[#E8F8F9] text-[#1CABB4] font-semibold px-2.5 py-1 rounded-full leading-none">{vendor.categoryLabel}</span>
   <div className="inline-flex items-center gap-1 leading-none"><MapPin size={11} className="flex-shrink-0" />{vendor.location}</div>
   <div className="inline-flex items-center gap-1 leading-none"><Star size={11} fill="#F59E0B" className="text-[#F59E0B] flex-shrink-0" /><span className="font-semibold text-[#1A3A3C]">{vendor.rating}</span><span>({vendor.reviewCount} ulasan)</span></div>
