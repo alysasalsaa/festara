@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Search, MoreVertical, Phone, Star, BadgeCheck, MapPin, Calendar, CreditCard, Check, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -17,7 +17,7 @@ const PACKAGES = [
   { name: "Paket Premium", desc: "300 foto + video, 2 hari", price: 9000000 },
 ];
 
-export default function ChatBookingPage() {
+function ChatBookingContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -381,5 +381,17 @@ export default function ChatBookingPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function ChatBookingPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-8 h-8 border-2 border-[#1CABB4] border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <ChatBookingContent />
+    </Suspense>
   );
 }
