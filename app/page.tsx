@@ -7,6 +7,7 @@ import HeroBanner from "@/components/HeroBanner";
 import AnimatedSection from "@/components/AnimatedSection";
 import StatsSection from "@/components/StatsSection";
 import CategoryIcon from "@/components/CategoryIcon";
+import TestimonialsSection from "@/components/TestimonialsSection";
 import NotificationToast from "@/components/NotificationToast";
 import VendorRegisterForm from "@/components/VendorRegisterForm";
 import { useAuth } from "@/lib/useAuth";
@@ -18,12 +19,6 @@ const STEPS = [
   { icon: "📅", step: "3", title: "Booking", desc: "Pilih paket dan lakukan pemesanan" },
   { icon: "🔒", step: "4", title: "Pembayaran Aman", desc: "Transaksi aman dengan sistem escrow" },
   { icon: "🎉", step: "5", title: "Acara Selesai", desc: "Beri ulasan dan bagikan pengalamanmu" },
-];
-
-const TESTIMONIALS = [
-  { name: "Anisa & Budi", event: "Wedding · Yogyakarta", text: "Festara sangat memudahkan proses booking vendor pernikahan kami. Semua vendor profesional dan responsif!", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=anisa", rating: 5 },
-  { name: "PT. Maju Bersama", event: "Corporate Event · Jakarta", text: "Kami berhasil menemukan EO terbaik dalam waktu singkat. Sistemnya mudah dan pembayaran sangat aman.", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=maju", rating: 5 },
-  { name: "Rina Sari", event: "Sweet 17 · Bandung", text: "Dekorasi ultah impian akhirnya terwujud! Vendor dari Festara hasilnya luar biasa, harga juga transparan.", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=rina", rating: 5 },
 ];
 
 export default function HomePage() {
@@ -101,7 +96,7 @@ export default function HomePage() {
       {/* Hero */}
       <HeroBanner />
 
-      {/* Stats — sekarang ambil data asli dari Supabase (lihat components/StatsSection.tsx) */}
+      {/* Stats — data asli dari Supabase (components/StatsSection.tsx) */}
       <AnimatedSection className="max-w-7xl mx-auto px-4 md:px-6">
         <StatsSection />
       </AnimatedSection>
@@ -223,31 +218,11 @@ export default function HomePage() {
         </div>
       </AnimatedSection>
 
-      {/* Testimonial */}
+      {/* Testimonial — data asli dari Supabase (components/TestimonialsSection.tsx) */}
       <AnimatedSection className="max-w-7xl mx-auto px-4 md:px-6">
         <h2 className="text-xl font-bold text-[#0D545A] mb-5 text-center"
           style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Kata Mereka</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {TESTIMONIALS.map((t, i) => (
-            <motion.div key={t.name}
-              initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }} transition={{ delay: i * 0.1 }}
-              whileHover={{ y: -4 }}
-              className="bg-white/80 backdrop-blur rounded-2xl p-5 shadow-[0_2px_12px_rgba(28,171,180,0.08)]">
-              <div className="flex gap-0.5 mb-3">
-                {Array.from({ length: t.rating }).map((_, j) => <Star key={j} size={14} fill="#F59E0B" className="text-[#F59E0B]" />)}
-              </div>
-              <p className="text-sm text-[#4A7A6D] leading-relaxed mb-4">"{t.text}"</p>
-              <div className="flex items-center gap-3">
-                <img src={t.avatar} alt="" className="w-10 h-10 rounded-full bg-[#E8F8F9]" />
-                <div>
-                  <p className="font-bold text-sm text-[#1A3A3C]">{t.name}</p>
-                  <p className="text-xs text-[#8ABDB5]">{t.event}</p>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+        <TestimonialsSection />
       </AnimatedSection>
 
       {/* CTA */}
