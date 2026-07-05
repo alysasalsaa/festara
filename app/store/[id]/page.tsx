@@ -1,11 +1,12 @@
 "use client";
-import { useState, use } from "react";
+import { useState, use, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Star, MapPin, BadgeCheck, MessageCircle, Heart, Share2, ChevronLeft, ChevronRight, Check, Camera } from "lucide-react";
-import { vendors, formatPrice } from "@/data";
+import { formatPrice, categories } from "@/data";
 import { useAuth } from "@/lib/useAuth";
 import { useWishlist } from "@/lib/useWishlist";
+import { getVendorById, SupabaseVendor } from "@/lib/vendors";
 import LoginPromptModal from "@/components/LoginPromptModal";
 
 const MONTHS = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
@@ -88,24 +89,54 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
   const router = useRouter();
   const { user } = useAuth();
   const { toggle, isWished } = useWishlist();
-  const vendor = vendors.find(v => v.id === id) || vendors[0];
+
+  const [vendor, setVendor] = useState<SupabaseVendor | null>(null);
+  const [vendorLoading, setVendorLoading] = useState(true);
+
   const [tab, setTab] = useState("Profil");
   const [selectedPkg, setSelectedPkg] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
-  const handleBooking = () => {
+  useEffect(() => {
+    async function fetchVendor() {
+      const v = await getVendorById(id);
+      setVendor(v);
+      setVendorLoading(false);
+    }
+    fetchVendor();
+  }, [id]);
+
+  if (vendorLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-2 border-[#1CABB4] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!vendor) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <p className="text-lg font-bold text-[#1A3A3C] mb-2">Vendor tidak ditemukan</p>
+        <p className="text-sm text-[#8ABDB5] mb-6">Vendor yang kamu cari mungkin sudah tidak tersedia.</p>
+        <Link href="/search" className="text-[#1CABB4] font-semibold hover:underline">Kembali ke pencarian</Link>
+      </div>
+    );
+  }
+
+  const categoryLabel = categories.find(c => c.id === vendor.category_id)?.name || "Vendor";
+  const coverImage = vendor.cover_url || "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&h=400&fit=crop";
+  const logoImage = vendor.logo_url || "https://api.dicebear.com/7.x/shapes/svg?seed=" + vendor.id;
+
+  const goToChat = () => {
     if (!user) { setShowLoginModal(true); return; }
-    router.push("/chat");
-  };
-  const handleChat = () => {
-    if (!user) { setShowLoginModal(true); return; }
-    router.push("/chat");
+    router.push(`/chat?vendor=${vendor.id}`);
   };
   const handleDateSelect = (date: string) => {
     setSelectedDate(date);
     if (!user) { setTimeout(() => setShowLoginModal(true), 300); return; }
-    setTimeout(() => router.push("/chat"), 500);
+    setTimeout(() => router.push(`/chat?vendor=${vendor.id}`), 500);
   };
 
   return (
@@ -114,7 +145,7 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
 
       {/* Cover */}
       <div className="relative rounded-3xl overflow-hidden h-44 md:h-60 mb-0">
-        <img src={vendor.image} alt={vendor.name} className="w-full h-full object-cover" />
+        <img src={coverImage} alt={vendor.name} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
         <Link href="/search" className="absolute top-4 left-4 bg-white/90 backdrop-blur rounded-xl px-3 py-1.5 text-xs font-semibold text-[#1A3A3C] flex items-center gap-1.5 hover:bg-white transition-colors">
           <ChevronLeft size={13} /> Kembali
@@ -131,47 +162,45 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
       </div>
 
       {/* Header Card */}
-<div className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.08)] p-5 mb-5 -mt-10 relative z-10 mx-2">
-  <div className="flex flex-col md:flex-row md:items-start gap-4">
-    <div className="flex items-start gap-4">
-      <div className="w-20 h-20 rounded-2xl border-4 border-white shadow-lg overflow-hidden flex-shrink-0 -mt-10 bg-white">
-        <img src={vendor.logo} alt={vendor.name} className="w-full h-full object-cover" />
-      </div>
-      <div className="flex-1 min-w-0 pt-1 md:hidden">
-        <div className="flex items-center gap-2 flex-wrap">
-          <h1 className="font-extrabold text-lg text-[#1A3A3C] leading-tight" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{vendor.name}</h1>
-          {vendor.isVerified && <BadgeCheck size={18} className="text-[#1CABB4] flex-shrink-0" />}
+      <div className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.08)] p-5 mb-5 -mt-10 relative z-10 mx-2">
+        <div className="flex flex-col md:flex-row md:items-start gap-4">
+          <div className="flex items-start gap-4">
+            <div className="w-20 h-20 rounded-2xl border-4 border-white shadow-lg overflow-hidden flex-shrink-0 -mt-10 bg-white">
+              <img src={logoImage} alt={vendor.name} className="w-full h-full object-cover" />
+            </div>
+            <div className="flex-1 min-w-0 pt-1 md:hidden">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="font-extrabold text-lg text-[#1A3A3C] leading-tight" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{vendor.name}</h1>
+                <BadgeCheck size={18} className="text-[#1CABB4] flex-shrink-0" />
+              </div>
+              <div className="flex items-center gap-3 flex-wrap mt-2.5 text-xs text-[#4A7A6D] leading-none">
+                <span className="inline-flex items-center bg-[#E8F8F9] text-[#1CABB4] font-semibold px-2.5 py-1 rounded-full leading-none">{categoryLabel}</span>
+                <div className="inline-flex items-center gap-1 leading-none"><MapPin size={11} className="flex-shrink-0" />{vendor.location || "-"}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-0 pt-1 hidden md:block">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="font-extrabold text-lg text-[#1A3A3C] leading-tight" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{vendor.name}</h1>
+              <BadgeCheck size={18} className="text-[#1CABB4] flex-shrink-0" />
+            </div>
+            <div className="flex items-center gap-3 flex-wrap mt-2.5 text-xs text-[#4A7A6D] leading-none">
+              <span className="inline-flex items-center bg-[#E8F8F9] text-[#1CABB4] font-semibold px-2.5 py-1 rounded-full leading-none">{categoryLabel}</span>
+              <div className="inline-flex items-center gap-1 leading-none"><MapPin size={11} className="flex-shrink-0" />{vendor.location || "-"}</div>
+            </div>
+          </div>
+
+          <div className="flex gap-2 flex-shrink-0 w-full md:w-auto">
+            <button onClick={goToChat} className="flex-1 md:flex-none flex items-center justify-center gap-1.5 text-xs font-semibold border border-[#D4EAC8] text-[#4A7A6D] hover:border-[#1CABB4] hover:text-[#1CABB4] px-3 py-2.5 rounded-xl transition-colors">
+              <MessageCircle size={13} /> Chat
+            </button>
+            <button onClick={goToChat} className="flex-1 md:flex-none flex items-center justify-center gap-1.5 text-xs font-bold bg-[#1CABB4] text-white px-4 py-2.5 rounded-xl hover:bg-[#178E96] transition-colors">
+              Booking Sekarang
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-3 flex-wrap mt-2.5 text-xs text-[#4A7A6D] leading-none">
-  <span className="inline-flex items-center bg-[#E8F8F9] text-[#1CABB4] font-semibold px-2.5 py-1 rounded-full leading-none">{vendor.categoryLabel}</span>
-  <div className="inline-flex items-center gap-1 leading-none"><MapPin size={11} className="flex-shrink-0" />{vendor.location}</div>
-  <div className="inline-flex items-center gap-1 leading-none"><Star size={11} fill="#F59E0B" className="text-[#F59E0B] flex-shrink-0" /><span className="font-semibold text-[#1A3A3C]">{vendor.rating}</span><span>({vendor.reviewCount} ulasan)</span></div>
-</div>
       </div>
-    </div>
-
-    <div className="flex-1 min-w-0 pt-1 hidden md:block">
-      <div className="flex items-center gap-2 flex-wrap">
-        <h1 className="font-extrabold text-lg text-[#1A3A3C] leading-tight" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>{vendor.name}</h1>
-        {vendor.isVerified && <BadgeCheck size={18} className="text-[#1CABB4] flex-shrink-0" />}
-      </div>
-      <div className="flex items-center gap-3 flex-wrap mt-2.5 text-xs text-[#4A7A6D] leading-none">
-  <span className="inline-flex items-center bg-[#E8F8F9] text-[#1CABB4] font-semibold px-2.5 py-1 rounded-full leading-none">{vendor.categoryLabel}</span>
-  <div className="inline-flex items-center gap-1 leading-none"><MapPin size={11} className="flex-shrink-0" />{vendor.location}</div>
-  <div className="inline-flex items-center gap-1 leading-none"><Star size={11} fill="#F59E0B" className="text-[#F59E0B] flex-shrink-0" /><span className="font-semibold text-[#1A3A3C]">{vendor.rating}</span><span>({vendor.reviewCount} ulasan)</span></div>
-</div>
-    </div>
-
-    <div className="flex gap-2 flex-shrink-0 w-full md:w-auto">
-      <button onClick={handleChat} className="flex-1 md:flex-none flex items-center justify-center gap-1.5 text-xs font-semibold border border-[#D4EAC8] text-[#4A7A6D] hover:border-[#1CABB4] hover:text-[#1CABB4] px-3 py-2.5 rounded-xl transition-colors">
-        <MessageCircle size={13} /> Chat
-      </button>
-      <button onClick={handleBooking} className="flex-1 md:flex-none flex items-center justify-center gap-1.5 text-xs font-bold bg-[#1CABB4] text-white px-4 py-2.5 rounded-xl hover:bg-[#178E96] transition-colors">
-        Booking Sekarang
-      </button>
-    </div>
-  </div>
-</div>
 
       {/* Tabs */}
       <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] mb-5 flex overflow-x-auto scrollbar-hide">
@@ -189,21 +218,7 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
           <div className="md:col-span-2 space-y-5">
             <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5">
               <h2 className="font-bold text-[#1A3A3C] mb-3">Tentang Kami</h2>
-              <p className="text-sm text-[#4A7A6D] leading-relaxed mb-4">{vendor.description}</p>
-              <div className="space-y-2">
-                {["Fotografer berpengalaman lebih dari 5 tahun","Peralatan kamera profesional terkini","Edit foto natural & cinematic","Pengiriman hasil tepat waktu"].map(item => (
-                  <div key={item} className="flex items-center gap-2.5 text-sm text-[#4A7A6D]">
-                    <div className="w-5 h-5 rounded-full bg-[#E8F8F9] flex items-center justify-center flex-shrink-0"><Check size={11} className="text-[#1CABB4]" /></div>
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5">
-              <h2 className="font-bold text-[#1A3A3C] mb-3">Spesialisasi</h2>
-              <div className="flex flex-wrap gap-2">
-                {vendor.tags.map(tag => <span key={tag} className="text-sm bg-[#E8F8F9] text-[#1CABB4] font-medium px-3 py-1.5 rounded-xl">{tag}</span>)}
-              </div>
+              <p className="text-sm text-[#4A7A6D] leading-relaxed mb-4">{vendor.description || "Vendor ini belum menambahkan deskripsi."}</p>
             </div>
           </div>
           <div className="space-y-5">
@@ -213,16 +228,11 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
               <MiniCalendar onSelect={handleDateSelect} />
               {selectedDate && <p className="text-xs text-center text-[#1CABB4] font-semibold mt-2 animate-pulse">{user ? "Mengarahkan ke booking..." : "Silakan login dulu..."}</p>}
             </div>
-            <div className="bg-gradient-to-br from-[#E8F8F9] to-[#F5FAF0] rounded-2xl p-4 border border-[#DBEBC9]">
-              <p className="text-xs text-[#4A7A6D] mb-1">Mulai dari</p>
-              <p className="text-xl font-extrabold text-[#1CABB4] mb-3">{formatPrice(vendor.price)}</p>
-              <button onClick={handleBooking} className="w-full bg-[#1CABB4] text-white text-sm font-bold text-center py-3 rounded-xl hover:bg-[#178E96] transition-colors">Booking Sekarang</button>
-            </div>
           </div>
         </div>
       )}
 
-      {/* TAB: Paket */}
+      {/* TAB: Paket — masih statis, migrasi ke tabel packages menyusul */}
       {tab === "Paket" && (
         <div className="grid md:grid-cols-3 gap-5">
           <div className="md:col-span-2 space-y-4">
@@ -240,15 +250,12 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="font-extrabold text-[#1CABB4] text-lg">{formatPrice(pkg.price)}</p>
-                    <div className={`w-5 h-5 rounded-full border-2 mt-2 ml-auto flex items-center justify-center ${selectedPkg === i ? "bg-[#1CABB4] border-[#1CABB4]" : "border-[#D4EAC8]"}`}>
-                      {selectedPkg === i && <Check size={11} className="text-white" />}
-                    </div>
                   </div>
                 </div>
               </div>
             ))}
             {selectedPkg !== null && (
-              <button onClick={handleBooking} className="w-full bg-[#1CABB4] text-white font-bold text-center py-3.5 rounded-2xl hover:bg-[#178E96] transition-colors">
+              <button onClick={goToChat} className="w-full bg-[#1CABB4] text-white font-bold text-center py-3.5 rounded-2xl hover:bg-[#178E96] transition-colors">
                 Booking {PACKAGES[selectedPkg].name} — Pilih Tanggal
               </button>
             )}
@@ -256,56 +263,34 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
           <div>
             <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5">
               <h2 className="font-bold text-[#1A3A3C] mb-1">Pilih Tanggal Acara</h2>
-              <p className="text-xs text-[#8ABDB5] mb-3">Klik tanggal → langsung ke booking</p>
               <MiniCalendar onSelect={handleDateSelect} />
             </div>
           </div>
         </div>
       )}
 
-      {/* TAB: Portofolio */}
+      {/* TAB: Portofolio — masih statis, migrasi menyusul */}
       {tab === "Portofolio" && (
         <div>
           <div className="flex items-center gap-2 mb-4">
             <Camera size={18} className="text-[#1CABB4]" />
-            <h2 className="font-bold text-[#1A3A3C]">Portofolio ({PORTFOLIO_IMGS.length} karya)</h2>
+            <h2 className="font-bold text-[#1A3A3C]">Portofolio</h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {PORTFOLIO_IMGS.map((img, i) => (
-              <div key={i} className="relative aspect-[4/3] rounded-2xl overflow-hidden group cursor-pointer">
-                <img src={img} alt={`Portfolio ${i+1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+              <div key={i} className="relative aspect-[4/3] rounded-2xl overflow-hidden">
+                <img src={img} alt={`Portfolio ${i+1}`} className="w-full h-full object-cover" />
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* TAB: Ulasan */}
+      {/* TAB: Ulasan — masih statis, migrasi ke tabel reviews menyusul */}
       {tab === "Ulasan" && (
         <div className="grid md:grid-cols-3 gap-5">
           <div className="md:col-span-2">
             <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5">
-              <div className="flex items-center gap-6 mb-5">
-                <div className="text-center">
-                  <div className="text-4xl font-extrabold text-[#1CABB4]">{vendor.rating}</div>
-                  <div className="flex gap-0.5 mt-1 justify-center">
-                    {Array.from({length: 5}).map((_, i) => <Star key={i} size={14} fill={i < Math.floor(vendor.rating) ? "#F59E0B" : "transparent"} className={i < Math.floor(vendor.rating) ? "text-[#F59E0B]" : "text-[#EAF5E4]"} />)}
-                  </div>
-                  <p className="text-xs text-[#8ABDB5] mt-1">{vendor.reviewCount} ulasan</p>
-                </div>
-                <div className="flex-1 space-y-1.5">
-                  {[5,4,3,2,1].map(star => (
-                    <div key={star} className="flex items-center gap-2">
-                      <span className="text-xs text-[#8ABDB5] w-3">{star}</span>
-                      <Star size={10} fill="#F59E0B" className="text-[#F59E0B]" />
-                      <div className="flex-1 bg-[#EAF5E4] rounded-full h-1.5 overflow-hidden">
-                        <div className="h-full bg-[#F59E0B] rounded-full" style={{ width: `${star===5?70:star===4?20:star===3?7:3}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
               <div className="space-y-4">
                 {REVIEWS.map((r, i) => (
                   <div key={i} className="flex gap-3 pb-4 border-b border-[#EAF5E4] last:border-0">
@@ -325,13 +310,6 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
               </div>
             </div>
           </div>
-          <div>
-            <div className="bg-gradient-to-br from-[#E8F8F9] to-[#F5FAF0] rounded-2xl p-4 border border-[#DBEBC9]">
-              <p className="text-xs text-[#4A7A6D] mb-1">Mulai dari</p>
-              <p className="text-xl font-extrabold text-[#1CABB4] mb-3">{formatPrice(vendor.price)}</p>
-              <button onClick={handleBooking} className="w-full bg-[#1CABB4] text-white text-sm font-bold text-center py-3 rounded-xl hover:bg-[#178E96] transition-colors">Booking Sekarang</button>
-            </div>
-          </div>
         </div>
       )}
 
@@ -340,29 +318,8 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
         <div className="grid md:grid-cols-2 gap-5">
           <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5">
             <h2 className="font-bold text-[#1A3A3C] mb-1">Pilih Tanggal Acara</h2>
-            <p className="text-xs text-[#8ABDB5] mb-3">Klik tanggal → langsung ke booking</p>
             <MiniCalendar onSelect={handleDateSelect} />
             {selectedDate && <p className="text-xs text-center text-[#1CABB4] font-semibold mt-2 animate-pulse">{user ? "Mengarahkan ke booking..." : "Silakan login dulu..."}</p>}
-          </div>
-          <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5">
-            <h2 className="font-bold text-[#1A3A3C] mb-4">Informasi Ketersediaan</h2>
-            <div className="space-y-3">
-              {[
-                { label: "Hari kerja", value: "Senin – Jumat" },
-                { label: "Hari libur", value: "Sabtu & Minggu (tersedia)" },
-                { label: "Waktu mulai", value: "07.00 – 17.00 WIB" },
-                { label: "Durasi minimal", value: "4 jam" },
-                { label: "Booking min.", value: "7 hari sebelum acara" },
-              ].map(item => (
-                <div key={item.label} className="flex justify-between py-2 border-b border-[#EAF5E4]">
-                  <span className="text-xs text-[#8ABDB5]">{item.label}</span>
-                  <span className="text-xs font-semibold text-[#1A3A3C]">{item.value}</span>
-                </div>
-              ))}
-            </div>
-            <button onClick={handleBooking} className="w-full mt-5 bg-[#1CABB4] text-white font-bold text-center py-3 rounded-xl hover:bg-[#178E96] transition-colors">
-              Lanjutkan Booking
-            </button>
           </div>
         </div>
       )}
