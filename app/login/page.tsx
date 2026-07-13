@@ -40,6 +40,21 @@ export default function LoginPage() {
       return;
     }
 
+    // Cek role user, arahkan admin ke /admin
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: userData } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (userData?.role === "admin") {
+        router.push("/admin");
+        return;
+      }
+    }
+
     router.push("/dashboard");
   };
 
@@ -56,7 +71,6 @@ export default function LoginPage() {
       setError("Gagal masuk dengan Google. Coba lagi.");
       setGoogleLoading(false);
     }
-    // kalau sukses, browser redirect ke Google, jadi tidak perlu setGoogleLoading(false) di sini
   };
 
   return (
