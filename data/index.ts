@@ -87,6 +87,7 @@ export const categories: Category[] = [
   { id: "dekorasi", name: "Dekorasi", icon: "", color: "#EC4899", productCount: 155 },
   { id: "merchandise-wisuda", name: "Merchandise Wisuda", icon: "", color: "#A855F7", productCount: 189 },
   { id: "catering", name: "Catering", icon: "", color: "#F97316", productCount: 112 },
+  { id: "mua", name: "MUA / Make Up Artist", icon: "", color: "#D946EF", productCount: 0 },
 ];
 
 // ============ STORES ============
