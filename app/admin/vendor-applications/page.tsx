@@ -99,6 +99,7 @@ export default function VendorApplicationsPage() {
           {applications.map((app) => {
             const categoryLabel = categories.find((c) => c.id === app.category_id)?.name || app.category_id;
             const isPending = app.status === "pending" || !app.status;
+            const portfolioUrls = app.portfolio_signed_urls ?? [];
 
             return (
               <div key={app.id} className="bg-white/80 backdrop-blur rounded-2xl p-5 shadow-sm">
@@ -147,7 +148,7 @@ export default function VendorApplicationsPage() {
                     {categoryLabel}
                   </span>
                   {app.instagram_url ? (
-                    
+                    <a
                       href={app.instagram_url}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -170,22 +171,22 @@ export default function VendorApplicationsPage() {
                       Foto KTP
                     </p>
                     <img
-                      src={app.ktp_signed_url}
+                      src={app.ktp_signed_url!}
                       alt="KTP"
-                      onClick={() => setPreviewImage(app.ktp_signed_url as string)}
+                      onClick={() => setPreviewImage(app.ktp_signed_url!)}
                       className="w-40 h-28 object-cover rounded-xl border border-[#D4EAC8] cursor-pointer hover:opacity-90 transition-opacity"
                     />
                   </div>
                 ) : null}
 
-                {app.portfolio_signed_urls && app.portfolio_signed_urls.length > 0 ? (
+                {portfolioUrls.length > 0 ? (
                   <div className="mb-4">
                     <p className="text-xs font-bold text-[#1A3A3C] mb-2 flex items-center gap-1.5">
                       <Images size={13} />
-                      Portofolio ({app.portfolio_signed_urls.length} foto)
+                      Portofolio ({portfolioUrls.length} foto)
                     </p>
                     <div className="flex gap-2 flex-wrap">
-                      {app.portfolio_signed_urls.map((url, i) => (
+                      {portfolioUrls.map((url, i) => (
                         <img
                           key={i}
                           src={url}
