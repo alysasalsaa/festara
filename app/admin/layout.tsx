@@ -56,19 +56,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
 
       {/* Nav mobile — horizontal scroll, cuma menu yang sudah aktif */}
-      <div className="md:hidden -mx-4 px-4 mb-4 overflow-x-auto">
-        <div className="flex gap-2 w-max">
-          {NAV_ITEMS.filter((item) => !item.comingSoon).map((item) => {
-            const isActive = item.exact ? pathname === item.href : pathname?.startsWith(item.href);
-            const Icon = item.icon;
-            return (
-              <Link key={item.href} href={item.href}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${isActive ? "bg-[#1CABB4] text-white" : "bg-white text-[#4A7A6D]"}`}>
-                <Icon size={14} /> {item.label}
-              </Link>
-            );
-          })}
+      <div className="md:hidden -mx-4 mb-4 relative">
+        <div className="px-4 overflow-x-auto">
+          <div className="flex gap-2 w-max pr-6">
+            {NAV_ITEMS.filter((item) => !item.comingSoon).map((item) => {
+              const isActive = item.exact ? pathname === item.href : pathname?.startsWith(item.href);
+              const Icon = item.icon;
+              return (
+                <Link key={item.href} href={item.href}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${isActive ? "bg-[#1CABB4] text-white" : "bg-white text-[#4A7A6D]"}`}>
+                  <Icon size={14} /> {item.label}
+                </Link>
+              );
+            })}
+          </div>
         </div>
+        <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#F5F8F6] to-transparent" />
       </div>
 
       <div className="flex gap-5">
