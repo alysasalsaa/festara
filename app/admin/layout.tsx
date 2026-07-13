@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   { href: "/admin/vendor-applications", label: "Aplikasi Vendor", icon: Store },
   { href: "/admin/payments", label: "Verifikasi Pembayaran", icon: Wallet },
   { href: "/admin/bookings", label: "Semua Booking", icon: CalendarCheck2 },
-  { href: "/admin/vendors", label: "Kelola Vendor", icon: Store, comingSoon: true },
+  { href: "/admin/vendors", label: "Kelola Vendor", icon: Store },
   { href: "/admin/settings", label: "Pengaturan", icon: Settings, comingSoon: true },
 ];
 
