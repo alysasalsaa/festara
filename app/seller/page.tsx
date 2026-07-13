@@ -614,29 +614,31 @@ export default function SellerDashboard() {
                 </div>
               </div>
               <p className="text-xs text-[#8ABDB5] mb-4">Klik tanggal untuk tandai tersedia / tidak tersedia</p>
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {DAYS_ID.map(d => <div key={d} className="text-center text-[10px] font-bold text-[#8ABDB5] py-1">{d}</div>)}
-              </div>
               <div className="grid grid-cols-7 gap-1">
                 {Array.from({ length: firstDayOfMonth }).map((_, i) => <div key={`e${i}`} />)}
                 {Array.from({ length: daysInMonth }).map((_, i) => {
                   const day = i + 1;
                   const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                   const avail = availability.find(a => a.date === dateStr);
-                  const isAvailable = avail?.is_available ?? false;
+                  const isManuallyBlocked = avail?.is_available === false;
                   const hasBooking = orders.some(o => o.event_date === dateStr && o.status !== "cancelled");
+                  const isUnavailable = hasBooking || isManuallyBlocked;
 
                   return (
-                    <button key={day} onClick={() => !hasBooking && handleToggleDate(dateStr, isAvailable)}
+                    <button key={day} onClick={() => !hasBooking && handleToggleDate(dateStr, !isManuallyBlocked)}
                       disabled={hasBooking}
-                      className={`aspect-square flex flex-col items-center justify-center rounded-xl text-xs transition-colors relative
-                        ${hasBooking ? "bg-[#1CABB4] text-white cursor-not-allowed" :
-                          isAvailable ? "bg-[#DCFCE7] text-[#15803D] hover:bg-[#bbf7d0]" :
-                          "bg-[#F0FBF5] text-[#8ABDB5] hover:bg-[#E8F8F9]"}`}>
-                      <span className="font-semibold">{day}</span>
+                      className={`aspect-square flex flex-col items-center justify-center rounded-xl text-xs font-semibold transition-colors border
+                        ${isUnavailable
+                          ? `bg-[#FEE2E2] text-[#EF4444] border-[#FCA5A5] ${hasBooking ? "cursor-not-allowed" : "hover:bg-[#FECACA]"}`
+                          : "bg-white text-[#1A3A3C] border-[#D4EAC8] hover:border-[#1CABB4] hover:bg-[#F0FBF5]"}`}>
+                      {day}
                     </button>
                   );
                 })}
+              </div>
+              <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[#EAF5E4]">
+                <div className="flex items-center gap-2 text-xs"><div className="w-3 h-3 rounded bg-[#FEE2E2] border border-[#FCA5A5]" /><span className="text-[#4A7A6D]">Sudah dibooking / tidak tersedia</span></div>
+                <div className="flex items-center gap-2 text-xs"><div className="w-3 h-3 rounded bg-white border border-[#D4EAC8]" /><span className="text-[#4A7A6D]">Tersedia</span></div>
               </div>
               <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[#EAF5E4]">
                 <div className="flex items-center gap-2 text-xs"><div className="w-3 h-3 rounded bg-[#1CABB4]" /><span className="text-[#4A7A6D]">Ada booking</span></div>
