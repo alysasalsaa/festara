@@ -102,20 +102,21 @@ function ChatBookingContent() {
 
       try {
         const { data: booking, error: bookingError } = await supabase
-          .from("bookings")
-          .insert({
-            buyer_id: user.id,
-            vendor_id: vendor.id,
-            package_id: pkg.id,
-            event_date: eventDate,
-            event_location: eventLocation,
-            guest_name: guestName,
-            notes,
-            status: "pending",
-            total_price: pkg.price,
-          })
-          .select("id")
-          .single();
+  .from("bookings")
+  .insert({
+    buyer_id: user.id,
+    vendor_id: vendor.id,
+    package_id: pkg.id,
+    event_date: eventDate,
+    event_location: eventLocation,
+    guest_name: guestName,
+    notes,
+    status: "pending",
+    total_price: pkg.price,
+    dp_amount: pkg.price,
+  })
+  .select("id")
+  .single();
 
         if (bookingError || !booking) {
           throw new Error("Gagal menyimpan booking: " + bookingError?.message);
