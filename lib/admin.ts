@@ -10,8 +10,14 @@ export type VendorApplication = {
   description: string | null;
   status: string | null;
   created_at: string;
+  years_experience: number | null;
+  instagram_url: string | null;
+  ktp_url: string | null;
+  portfolio_urls: string[] | null;
   applicant_name?: string;
   applicant_email?: string;
+  ktp_signed_url?: string | null;
+  portfolio_signed_urls?: string[];
 };
 
 export async function isCurrentUserAdmin(): Promise<boolean> {
@@ -31,7 +37,7 @@ export async function isCurrentUserAdmin(): Promise<boolean> {
 export async function getVendorApplications(status?: string): Promise<VendorApplication[]> {
   let query = supabase
     .from("vendor_applications")
-    .select("id, user_id, business_name, category_id, location, phone, description, status, created_at")
+    .select("id, user_id, business_name, category_id, location, phone, description, status, created_at, years_experience, instagram_url, ktp_url, portfolio_urls")
     .order("created_at", { ascending: false });
 
   if (status) query = query.eq("status", status);
@@ -46,21 +52,47 @@ export async function getVendorApplications(status?: string): Promise<VendorAppl
   const applications = data || [];
   const userIds = [...new Set(applications.map(a => a.user_id))];
 
+  let userMap: Record<string, { full_name: string; email: string }> = {};
   if (userIds.length > 0) {
     const { data: usersData } = await supabase
       .from("users")
       .select("id, full_name, email")
       .in("id", userIds);
-
-    const userMap = Object.fromEntries((usersData || []).map(u => [u.id, u]));
-    return applications.map(a => ({
-      ...a,
-      applicant_name: userMap[a.user_id]?.full_name,
-      applicant_email: userMap[a.user_id]?.email,
-    }));
+    userMap = Object.fromEntries((usersData || []).map(u => [u.id, u]));
   }
 
-  return applications;
+  // Generate signed URL untuk KTP dan portofolio (berlaku 1 jam)
+  const withSignedUrls = await Promise.all(
+    applications.map(async (app) => {
+      let ktpSignedUrl: string | null = null;
+      if (app.ktp_url) {
+        const { data } = await supabase.storage
+          .from("vendor-application-files")
+          .createSignedUrl(app.ktp_url, 3600);
+        ktpSignedUrl = data?.signedUrl || null;
+      }
+
+      let portfolioSignedUrls: string[] = [];
+      if (app.portfolio_urls && app.portfolio_urls.length > 0) {
+        const signedResults = await Promise.all(
+          app.portfolio_urls.map((path: string) =>
+            supabase.storage.from("vendor-application-files").createSignedUrl(path, 3600)
+          )
+        );
+        portfolioSignedUrls = signedResults.map(r => r.data?.signedUrl).filter(Boolean) as string[];
+      }
+
+      return {
+        ...app,
+        applicant_name: userMap[app.user_id]?.full_name,
+        applicant_email: userMap[app.user_id]?.email,
+        ktp_signed_url: ktpSignedUrl,
+        portfolio_signed_urls: portfolioSignedUrls,
+      };
+    })
+  );
+
+  return withSignedUrls;
 }
 
 export async function approveVendorApplication(applicationId: string): Promise<{ success: boolean; error?: string }> {

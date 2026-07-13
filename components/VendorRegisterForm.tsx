@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Store, MapPin, Phone, FileText, ChevronDown, Instagram, Clock, IdCard, Images, X, Loader2 } from "lucide-react";
+import { Store, MapPin, Phone, FileText, ChevronDown, AtSign, Clock, IdCard, Images, X, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { categories } from "@/data";
@@ -23,7 +23,7 @@ export default function VendorRegisterForm({ onSuccess }: { onSuccess: () => voi
   const [error, setError] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setForm(p => ({ ...p, [e.target.name]: e.target.value }));
+    setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
   };
 
   const handleKtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,11 +33,11 @@ export default function VendorRegisterForm({ onSuccess }: { onSuccess: () => voi
 
   const handlePortfolioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    setPortfolioFiles(prev => [...prev, ...files]);
+    setPortfolioFiles((prev) => [...prev, ...files]);
   };
 
   const removePortfolioFile = (index: number) => {
-    setPortfolioFiles(prev => prev.filter((_, i) => i !== index));
+    setPortfolioFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,7 +60,6 @@ export default function VendorRegisterForm({ onSuccess }: { onSuccess: () => voi
     setLoading(true);
 
     try {
-      // Upload KTP
       setUploadStep("Mengupload KTP...");
       const ktpExt = ktpFile.name.split(".").pop();
       const ktpPath = `${user.id}/ktp-${Date.now()}.${ktpExt}`;
@@ -70,7 +69,6 @@ export default function VendorRegisterForm({ onSuccess }: { onSuccess: () => voi
 
       if (ktpUploadError) throw new Error("Gagal upload KTP: " + ktpUploadError.message);
 
-      // Upload portfolio (bisa lebih dari 1 file)
       setUploadStep("Mengupload portofolio...");
       const portfolioPaths: string[] = [];
       for (let i = 0; i < portfolioFiles.length; i++) {
@@ -84,7 +82,6 @@ export default function VendorRegisterForm({ onSuccess }: { onSuccess: () => voi
         portfolioPaths.push(path);
       }
 
-      // Simpan aplikasi
       setUploadStep("Menyimpan pendaftaran...");
       const { error: insertError } = await supabase.from("vendor_applications").insert({
         user_id: user.id,
@@ -115,26 +112,41 @@ export default function VendorRegisterForm({ onSuccess }: { onSuccess: () => voi
     }
   };
 
+  const portfolioProgressClass =
+    portfolioFiles.length >= 3 ? "text-[#15803D]" : "text-[#8ABDB5]";
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="text-xs font-semibold text-[#4A7A6D] block mb-1.5">Nama Bisnis / Vendor</label>
         <div className="relative">
           <Store size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8ABDB5]" />
-          <input name="business_name" value={form.business_name} onChange={handleChange} required
+          <input
+            name="business_name"
+            value={form.business_name}
+            onChange={handleChange}
+            required
             placeholder="Contoh: Lavinia Wedding Fotografer"
-            className="w-full bg-[#F0FBF5] border border-[#D4EAC8] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4]" />
+            className="w-full bg-[#F0FBF5] border border-[#D4EAC8] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4]"
+          />
         </div>
       </div>
 
       <div>
         <label className="text-xs font-semibold text-[#4A7A6D] block mb-1.5">Kategori</label>
         <div className="relative">
-          <select name="category_id" value={form.category_id} onChange={handleChange} required
-            className="w-full appearance-none bg-[#F0FBF5] border border-[#D4EAC8] rounded-xl pl-4 pr-8 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] cursor-pointer">
+          <select
+            name="category_id"
+            value={form.category_id}
+            onChange={handleChange}
+            required
+            className="w-full appearance-none bg-[#F0FBF5] border border-[#D4EAC8] rounded-xl pl-4 pr-8 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] cursor-pointer"
+          >
             <option value="">Pilih kategori</option>
-            {categories.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
             ))}
           </select>
           <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8ABDB5] pointer-events-none" />
@@ -145,9 +157,14 @@ export default function VendorRegisterForm({ onSuccess }: { onSuccess: () => voi
         <label className="text-xs font-semibold text-[#4A7A6D] block mb-1.5">Lokasi</label>
         <div className="relative">
           <MapPin size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8ABDB5]" />
-          <input name="location" value={form.location} onChange={handleChange} required
+          <input
+            name="location"
+            value={form.location}
+            onChange={handleChange}
+            required
             placeholder="Contoh: Yogyakarta"
-            className="w-full bg-[#F0FBF5] border border-[#D4EAC8] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4]" />
+            className="w-full bg-[#F0FBF5] border border-[#D4EAC8] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4]"
+          />
         </div>
       </div>
 
@@ -155,9 +172,14 @@ export default function VendorRegisterForm({ onSuccess }: { onSuccess: () => voi
         <label className="text-xs font-semibold text-[#4A7A6D] block mb-1.5">Nomor WhatsApp</label>
         <div className="relative">
           <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8ABDB5]" />
-          <input name="phone" value={form.phone} onChange={handleChange} required
+          <input
+            name="phone"
+            value={form.phone}
+            onChange={handleChange}
+            required
             placeholder="08xxxxxxxxxx"
-            className="w-full bg-[#F0FBF5] border border-[#D4EAC8] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4]" />
+            className="w-full bg-[#F0FBF5] border border-[#D4EAC8] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4]"
+          />
         </div>
       </div>
 
@@ -165,19 +187,31 @@ export default function VendorRegisterForm({ onSuccess }: { onSuccess: () => voi
         <label className="text-xs font-semibold text-[#4A7A6D] block mb-1.5">Pengalaman (tahun beroperasi)</label>
         <div className="relative">
           <Clock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8ABDB5]" />
-          <input name="years_experience" type="number" min="0" value={form.years_experience} onChange={handleChange} required
+          <input
+            name="years_experience"
+            type="number"
+            min="0"
+            value={form.years_experience}
+            onChange={handleChange}
+            required
             placeholder="Contoh: 3"
-            className="w-full bg-[#F0FBF5] border border-[#D4EAC8] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4]" />
+            className="w-full bg-[#F0FBF5] border border-[#D4EAC8] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4]"
+          />
         </div>
       </div>
 
       <div>
         <label className="text-xs font-semibold text-[#4A7A6D] block mb-1.5">Instagram Usaha</label>
         <div className="relative">
-          <Instagram size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8ABDB5]" />
-          <input name="instagram_url" value={form.instagram_url} onChange={handleChange} required
+          <AtSign size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8ABDB5]" />
+          <input
+            name="instagram_url"
+            value={form.instagram_url}
+            onChange={handleChange}
+            required
             placeholder="https://instagram.com/namausaha"
-            className="w-full bg-[#F0FBF5] border border-[#D4EAC8] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4]" />
+            className="w-full bg-[#F0FBF5] border border-[#D4EAC8] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4]"
+          />
         </div>
       </div>
 
@@ -185,9 +219,14 @@ export default function VendorRegisterForm({ onSuccess }: { onSuccess: () => voi
         <label className="text-xs font-semibold text-[#4A7A6D] block mb-1.5">Deskripsi Bisnis</label>
         <div className="relative">
           <FileText size={15} className="absolute left-3 top-3 text-[#8ABDB5]" />
-          <textarea name="description" value={form.description} onChange={handleChange} rows={3}
+          <textarea
+            name="description"
+            value={form.description}
+            onChange={handleChange}
+            rows={3}
             placeholder="Ceritakan tentang bisnis kamu..."
-            className="w-full bg-[#F0FBF5] border border-[#D4EAC8] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] resize-none placeholder:text-[#8ABDB5]" />
+            className="w-full bg-[#F0FBF5] border border-[#D4EAC8] rounded-xl pl-9 pr-4 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] resize-none placeholder:text-[#8ABDB5]"
+          />
         </div>
       </div>
 
@@ -202,7 +241,9 @@ export default function VendorRegisterForm({ onSuccess }: { onSuccess: () => voi
             <input type="file" accept="image/*" onChange={handleKtpChange} className="hidden" />
           </label>
         </div>
-        <p className="text-[10px] text-[#8ABDB5] mt-1">Data KTP disimpan aman dan hanya bisa diakses tim verifikasi Festara.</p>
+        <p className="text-[10px] text-[#8ABDB5] mt-1">
+          Data KTP disimpan aman dan hanya bisa diakses tim verifikasi Festara.
+        </p>
       </div>
 
       <div>
@@ -219,15 +260,18 @@ export default function VendorRegisterForm({ onSuccess }: { onSuccess: () => voi
             {portfolioFiles.map((file, i) => (
               <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-[#D4EAC8]">
                 <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
-                <button type="button" onClick={() => removePortfolioFile(i)}
-                  className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => removePortfolioFile(i)}
+                  className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center"
+                >
                   <X size={11} className="text-white" />
                 </button>
               </div>
             ))}
           </div>
         )}
-        <p className="text-[10px] mt-1 ${portfolioFiles.length >= 3 ? 'text-[#15803D]' : 'text-[#8ABDB5]'}">
+        <p className={`text-[10px] mt-1 ${portfolioProgressClass}`}>
           {portfolioFiles.length}/3 foto minimal terpenuhi
         </p>
       </div>
@@ -236,11 +280,19 @@ export default function VendorRegisterForm({ onSuccess }: { onSuccess: () => voi
         <p className="text-xs text-[#EF4444] bg-[#FEF2F2] border border-[#EF4444]/20 rounded-xl px-3 py-2">{error}</p>
       )}
 
-      <button type="submit" disabled={loading}
-        className="w-full bg-[#1CABB4] hover:bg-[#178E96] disabled:opacity-70 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
-        {loading
-          ? <><Loader2 size={15} className="animate-spin" />{uploadStep || "Mendaftar..."}</>
-          : "Daftar Sebagai Vendor"}
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-[#1CABB4] hover:bg-[#178E96] disabled:opacity-70 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+      >
+        {loading ? (
+          <>
+            <Loader2 size={15} className="animate-spin" />
+            {uploadStep || "Mendaftar..."}
+          </>
+        ) : (
+          "Daftar Sebagai Vendor"
+        )}
       </button>
     </form>
   );
