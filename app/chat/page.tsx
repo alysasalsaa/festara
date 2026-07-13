@@ -11,11 +11,13 @@ import ChatThread from "@/components/ChatThread";
 
 const STEPS = ["Pilih Paket", "Detail Acara", "Pembayaran", "Konfirmasi"];
 
-const PACKAGES = [
-  { name: "Paket Basic", desc: "100 foto editing, 1 hari", price: 3500000 },
-  { name: "Paket Silver", desc: "200 foto + album, 1 hari", price: 5500000, popular: true },
-  { name: "Paket Premium", desc: "300 foto + video, 2 hari", price: 9000000 },
-];
+type VendorPkg = {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  is_popular: boolean;
+};
 
 function ChatBookingContent() {
   const { user, loading } = useAuth();
@@ -26,8 +28,11 @@ function ChatBookingContent() {
   const [vendor, setVendor] = useState<SupabaseVendor | null>(null);
   const [vendorLoading, setVendorLoading] = useState(true);
 
+  const [packages, setPackages] = useState<VendorPkg[]>([]);
+  const [packagesLoading, setPackagesLoading] = useState(true);
+
   const [activeStep, setActiveStep] = useState(0);
-  const [selectedPkg, setSelectedPkg] = useState(1);
+  const [selectedPkg, setSelectedPkg] = useState<number | null>(null);
   const [eventDate, setEventDate] = useState("2026-11-12");
   const [eventLocation, setEventLocation] = useState("");
   const [guestName, setGuestName] = useState("");
@@ -60,7 +65,29 @@ function ChatBookingContent() {
     fetchVendor();
   }, [vendorId]);
 
-  if (loading || vendorLoading) return (
+  useEffect(() => {
+    async function fetchPackages() {
+      if (!vendorId) {
+        setPackagesLoading(false);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("packages")
+        .select("id, name, description, price, is_popular")
+        .eq("vendor_id", vendorId)
+        .eq("is_active", true)
+        .order("price");
+
+      if (!error && data) {
+        setPackages(data);
+        if (data.length > 0) setSelectedPkg(0);
+      }
+      setPackagesLoading(false);
+    }
+    fetchPackages();
+  }, [vendorId]);
+
+  if (loading || vendorLoading || packagesLoading) return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="w-8 h-8 border-2 border-[#1CABB4] border-t-transparent rounded-full animate-spin" />
     </div>
@@ -80,9 +107,10 @@ function ChatBookingContent() {
 
   const categoryLabel = categories.find(c => c.id === vendor.category_id)?.name || "Vendor";
   const logoImage = vendor.logo_url || "https://api.dicebear.com/7.x/shapes/svg?seed=" + vendor.id;
-  const pkg = PACKAGES[selectedPkg];
+  const pkg = selectedPkg !== null ? packages[selectedPkg] : null;
 
   const handlePay = async () => {
+    if (!pkg) return;
     setPaying(true);
     setPayError("");
 
@@ -166,7 +194,7 @@ function ChatBookingContent() {
           </div>
         </div>
 
-        {/* ── PANEL 2: BOOKING (tetap sama seperti sebelumnya) ── */}
+        {/* ── PANEL 2: BOOKING ── */}
         <div className="bg-white rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.08)] flex flex-col overflow-hidden" style={{ height: 600 }}>
           <div className="px-4 pt-4 pb-3 border-b border-[#EAF5E4]">
             <p className="text-xs font-bold text-[#1A3A3C] mb-3">Booking</p>
@@ -192,30 +220,34 @@ function ChatBookingContent() {
             {activeStep === 0 && (
               <div className="space-y-3">
                 <p className="text-xs font-bold text-[#1A3A3C] mb-2">Pilih Paket</p>
-                {PACKAGES.map((p, i) => (
-                  <div key={i} onClick={() => setSelectedPkg(i)}
-                    className={`border-2 rounded-xl p-3 cursor-pointer transition-all ${selectedPkg === i ? "border-[#1CABB4] bg-[#E8F8F9]/40" : "border-[#D4EAC8] hover:border-[#DBEBC9]"}`}>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <p className="text-sm font-bold text-[#1A3A3C]">{p.name}</p>
-                          {p.popular && <span className="text-[9px] bg-[#1CABB4] text-white px-1.5 py-0.5 rounded-full font-bold">Terpopuler</span>}
+                {packages.length === 0 ? (
+                  <p className="text-center text-sm text-[#8ABDB5] py-10">Vendor ini belum menambahkan paket layanan.</p>
+                ) : (
+                  packages.map((p, i) => (
+                    <div key={p.id} onClick={() => setSelectedPkg(i)}
+                      className={`border-2 rounded-xl p-3 cursor-pointer transition-all ${selectedPkg === i ? "border-[#1CABB4] bg-[#E8F8F9]/40" : "border-[#D4EAC8] hover:border-[#DBEBC9]"}`}>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-bold text-[#1A3A3C]">{p.name}</p>
+                            {p.is_popular && <span className="text-[9px] bg-[#1CABB4] text-white px-1.5 py-0.5 rounded-full font-bold">Terpopuler</span>}
+                          </div>
+                          <p className="text-xs text-[#8ABDB5] mt-0.5">{p.description}</p>
                         </div>
-                        <p className="text-xs text-[#8ABDB5] mt-0.5">{p.desc}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-extrabold text-[#1CABB4]">{formatPrice(p.price)}</p>
-                        <div className={`w-4 h-4 rounded-full border-2 mt-1 ml-auto flex items-center justify-center ${selectedPkg === i ? "bg-[#1CABB4] border-[#1CABB4]" : "border-[#D4EAC8]"}`}>
-                          {selectedPkg === i && <Check size={9} className="text-white" />}
+                        <div className="text-right">
+                          <p className="text-sm font-extrabold text-[#1CABB4]">{formatPrice(p.price)}</p>
+                          <div className={`w-4 h-4 rounded-full border-2 mt-1 ml-auto flex items-center justify-center ${selectedPkg === i ? "bg-[#1CABB4] border-[#1CABB4]" : "border-[#D4EAC8]"}`}>
+                            {selectedPkg === i && <Check size={9} className="text-white" />}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             )}
 
-            {activeStep === 1 && (
+            {activeStep === 1 && pkg && (
               <div className="space-y-4">
                 <p className="text-xs font-bold text-[#1A3A3C]">Detail Acara</p>
                 <div>
@@ -249,7 +281,7 @@ function ChatBookingContent() {
               </div>
             )}
 
-            {activeStep >= 2 && (
+            {activeStep >= 2 && pkg && (
               <div className="space-y-3">
                 <p className="text-xs font-bold text-[#1A3A3C]">Ringkasan Booking</p>
                 <div className="flex items-center gap-3 bg-[#F0FBF5] rounded-xl p-3">
@@ -293,7 +325,8 @@ function ChatBookingContent() {
           <div className="p-4 border-t border-[#EAF5E4]">
             {activeStep < 2 ? (
               <button onClick={() => setActiveStep(s => Math.min(s + 1, 2))}
-                className="w-full bg-[#1CABB4] text-white text-sm font-bold py-3 rounded-xl hover:bg-[#178E96] transition-colors">
+                disabled={activeStep === 0 && selectedPkg === null}
+                className="w-full bg-[#1CABB4] text-white text-sm font-bold py-3 rounded-xl hover:bg-[#178E96] transition-colors disabled:opacity-50">
                 {activeStep === 0 ? "Pilih Paket Ini" : "Konfirmasi Detail"}
               </button>
             ) : (
@@ -310,14 +343,16 @@ function ChatBookingContent() {
           </div>
         </div>
 
-        {/* ── PANEL 3: PEMBAYARAN (tetap sama seperti sebelumnya) ── */}
+        {/* ── PANEL 3: PEMBAYARAN (masih dummy, Midtrans menyusul) ── */}
         <div className="bg-white rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.08)] flex flex-col overflow-hidden" style={{ height: 600 }}>
           <div className="px-4 pt-4 pb-3 border-b border-[#EAF5E4]">
             <p className="text-xs font-bold text-[#1A3A3C]">Pembayaran</p>
           </div>
 
           <div className="flex-1 flex flex-col items-center justify-between p-5">
-            {!paid ? (
+            {!pkg ? (
+              <p className="text-sm text-[#8ABDB5] text-center py-10">Pilih paket terlebih dahulu di panel Booking.</p>
+            ) : !paid ? (
               <>
                 <div className="w-full">
                   <div className="border-2 border-[#1CABB4] bg-[#E8F8F9]/40 rounded-xl p-3 flex items-center gap-3 mb-5">
