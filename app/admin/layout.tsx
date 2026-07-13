@@ -1,13 +1,23 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, ShieldCheck, Store, Grid3x3, LogOut } from "lucide-react";
+import { LayoutDashboard, ShieldCheck, Store, Wallet, CalendarCheck2, Settings, LogOut } from "lucide-react";
 import { isCurrentUserAdmin } from "@/lib/admin";
 import { supabase } from "@/lib/supabase";
 
+const NAV_ITEMS = [
+  { href: "/admin", label: "Ringkasan", icon: LayoutDashboard, exact: true },
+  { href: "/admin/vendor-applications", label: "Aplikasi Vendor", icon: Store },
+  { href: "/admin/payments", label: "Verifikasi Pembayaran", icon: Wallet, comingSoon: true },
+  { href: "/admin/bookings", label: "Semua Booking", icon: CalendarCheck2, comingSoon: true },
+  { href: "/admin/vendors", label: "Kelola Vendor", icon: Store, comingSoon: true },
+  { href: "/admin/settings", label: "Pengaturan", icon: Settings, comingSoon: true },
+];
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [checking, setChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -45,17 +55,48 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </h1>
       </div>
 
+      {/* Nav mobile — horizontal scroll, cuma menu yang sudah aktif */}
+      <div className="md:hidden -mx-4 px-4 mb-4 overflow-x-auto">
+        <div className="flex gap-2 w-max">
+          {NAV_ITEMS.filter((item) => !item.comingSoon).map((item) => {
+            const isActive = item.exact ? pathname === item.href : pathname?.startsWith(item.href);
+            const Icon = item.icon;
+            return (
+              <Link key={item.href} href={item.href}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${isActive ? "bg-[#1CABB4] text-white" : "bg-white text-[#4A7A6D]"}`}>
+                <Icon size={14} /> {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="flex gap-5">
-        <aside className="hidden md:block w-52 flex-shrink-0">
-          <div className="bg-white/80 backdrop-blur rounded-2xl shadow-sm overflow-hidden sticky top-24">
-            <Link href="/admin" className="flex items-center gap-3 px-4 py-3.5 text-sm text-[#4A7A6D] hover:bg-[#F0FBF5] transition-colors">
-              <LayoutDashboard size={17} /> Ringkasan
-            </Link>
-            <Link href="/admin/vendor-applications" className="flex items-center gap-3 px-4 py-3.5 text-sm text-[#4A7A6D] hover:bg-[#F0FBF5] transition-colors">
-              <Store size={17} /> Aplikasi Vendor
-            </Link>
+        <aside className="hidden md:block w-56 flex-shrink-0">
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden sticky top-6">
+            {NAV_ITEMS.map((item) => {
+              const isActive = item.exact ? pathname === item.href : pathname?.startsWith(item.href);
+              const Icon = item.icon;
+
+              if (item.comingSoon) {
+                return (
+                  <div key={item.href}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-sm text-[#B9CFC8] cursor-not-allowed">
+                    <span className="flex items-center gap-3"><Icon size={17} /> {item.label}</span>
+                    <span className="text-[9px] font-semibold bg-[#F0FBF5] text-[#8ABDB5] px-1.5 py-0.5 rounded-full">Segera</span>
+                  </div>
+                );
+              }
+
+              return (
+                <Link key={item.href} href={item.href}
+                  className={`flex items-center gap-3 px-4 py-3.5 text-sm transition-colors border-l-4 ${isActive ? "bg-[#E8F8F9] text-[#1CABB4] font-semibold border-[#1CABB4]" : "text-[#4A7A6D] hover:bg-[#F0FBF5] border-transparent"}`}>
+                  <Icon size={17} /> {item.label}
+                </Link>
+              );
+            })}
             <button onClick={() => supabase.auth.signOut().then(() => router.push("/"))}
-              className="w-full flex items-center gap-3 px-4 py-3.5 text-sm text-[#EF4444] hover:bg-[#FEF2F2] transition-colors text-left">
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-sm text-[#EF4444] hover:bg-[#FEF2F2] transition-colors text-left border-t border-[#EAF5E4]">
               <LogOut size={17} /> Keluar
             </button>
           </div>
