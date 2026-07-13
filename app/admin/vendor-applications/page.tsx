@@ -1,229 +1,223 @@
 "use client";
-import { useState, useEffect } from "react";
-import { Check, X, Clock, MapPin, Phone, Loader2, AtSign, IdCard, Images, Calendar } from "lucide-react";
-import { getVendorApplications, approveVendorApplication, rejectVendorApplication, VendorApplication } from "@/lib/admin";
-import { categories } from "@/data";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Store, Wallet, CalendarCheck2, Users, TrendingUp, Clock, ArrowRight, FileImage } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { formatPrice } from "@/data";
 
-const FILTERS = [
-  { value: "", label: "Semua" },
-  { value: "pending", label: "Menunggu" },
-  { value: "approved", label: "Disetujui" },
-  { value: "rejected", label: "Ditolak" },
-];
+type Stats = {
+  pendingApplications: number;
+  waitingVerification: number;
+  bookingsThisMonth: number;
+  totalRevenue: number;
+  activeVendors: number;
+};
 
-export default function VendorApplicationsPage() {
-  const [applications, setApplications] = useState<VendorApplication[]>([]);
+type ActivityItem = {
+  id: string;
+  type: "application" | "proof";
+  label: string;
+  sublabel: string;
+  timestamp: string;
+};
+
+export default function AdminDashboardPage() {
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("");
-  const [processingId, setProcessingId] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState("");
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-
-  async function fetchData() {
-    setLoading(true);
-    const data = await getVendorApplications(filter || undefined);
-    setApplications(data);
-    setLoading(false);
-  }
 
   useEffect(() => {
-    fetchData();
-  }, [filter]);
+    async function fetchDashboard() {
+      setLoading(true);
 
-  const handleApprove = async (id: string) => {
-    setProcessingId(id);
-    setErrorMsg("");
-    const result = await approveVendorApplication(id);
-    if (result.success) {
-      await fetchData();
-    } else {
-      setErrorMsg(result.error || "Gagal approve aplikasi");
-    }
-    setProcessingId(null);
-  };
+      const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
 
-  const handleReject = async (id: string) => {
-    setProcessingId(id);
-    setErrorMsg("");
-    const result = await rejectVendorApplication(id);
-    if (result.success) {
-      await fetchData();
-    } else {
-      setErrorMsg(result.error || "Gagal reject aplikasi");
+      const [
+        { count: pendingApplications },
+        { count: waitingVerification },
+        { count: bookingsThisMonth },
+        { data: revenueRows },
+        { count: activeVendors },
+        { data: recentApps },
+        { data: recentProofs },
+      ] = await Promise.all([
+        supabase.from("vendor_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("transactions").select("id", { count: "exact", head: true }).eq("status", "waiting_verification"),
+        supabase.from("bookings").select("id", { count: "exact", head: true }).gte("created_at", startOfMonth),
+        supabase.from("transactions").select("amount").in("status", ["paid", "disbursed"]),
+        supabase.from("vendors").select("id", { count: "exact", head: true }).eq("is_active", true),
+        supabase.from("vendor_applications").select("id, business_name, status, created_at").order("created_at", { ascending: false }).limit(5),
+        supabase.from("transactions").select("id, order_id, status, proof_uploaded_at").not("proof_uploaded_at", "is", null).order("proof_uploaded_at", { ascending: false }).limit(5),
+      ]);
+
+      const totalRevenue = (revenueRows || []).reduce((sum, r) => sum + Number(r.amount || 0), 0);
+
+      setStats({
+        pendingApplications: pendingApplications || 0,
+        waitingVerification: waitingVerification || 0,
+        bookingsThisMonth: bookingsThisMonth || 0,
+        totalRevenue,
+        activeVendors: activeVendors || 0,
+      });
+
+      const appItems: ActivityItem[] = (recentApps || []).map((a) => ({
+        id: `app-${a.id}`,
+        type: "application",
+        label: `Aplikasi vendor baru: ${a.business_name}`,
+        sublabel: a.status === "pending" ? "Menunggu ditinjau" : a.status === "approved" ? "Disetujui" : "Ditolak",
+        timestamp: a.created_at,
+      }));
+
+      const proofItems: ActivityItem[] = (recentProofs || []).map((t) => ({
+        id: `trx-${t.id}`,
+        type: "proof",
+        label: `Bukti transfer diunggah — ${t.order_id}`,
+        sublabel: t.status === "waiting_verification" ? "Menunggu verifikasi" : t.status === "paid" ? "Sudah diverifikasi" : t.status === "rejected" ? "Ditolak" : t.status,
+        timestamp: t.proof_uploaded_at,
+      }));
+
+      const merged = [...appItems, ...proofItems]
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, 8);
+
+      setActivity(merged);
+      setLoading(false);
     }
-    setProcessingId(null);
-  };
+
+    fetchDashboard();
+  }, []);
+
+  if (loading || !stats) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="w-6 h-6 border-2 border-[#1CABB4] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const statCards = [
+    {
+      label: "Aplikasi Vendor Pending",
+      value: stats.pendingApplications,
+      icon: Store,
+      needsAttention: stats.pendingApplications > 0,
+      href: "/admin/vendor-applications",
+    },
+    {
+      label: "Bukti Transfer Menunggu",
+      value: stats.waitingVerification,
+      icon: Wallet,
+      needsAttention: stats.waitingVerification > 0,
+      href: null,
+    },
+    {
+      label: "Booking Bulan Ini",
+      value: stats.bookingsThisMonth,
+      icon: CalendarCheck2,
+      needsAttention: false,
+      href: null,
+    },
+    {
+      label: "Pendapatan Terverifikasi",
+      value: formatPrice(stats.totalRevenue),
+      icon: TrendingUp,
+      needsAttention: false,
+      href: null,
+      isText: true,
+    },
+    {
+      label: "Vendor Aktif",
+      value: stats.activeVendors,
+      icon: Users,
+      needsAttention: false,
+      href: null,
+    },
+  ];
 
   return (
-    <div className="space-y-4">
-      {previewImage && (
-        <div
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6"
-          onClick={() => setPreviewImage(null)}
-        >
-          <img src={previewImage} alt="Preview" className="max-w-full max-h-full rounded-2xl" />
-        </div>
-      )}
+    <div className="space-y-5">
+      <h2 className="font-bold text-[#1A3A3C]">Ringkasan Admin</h2>
 
-      <div className="flex items-center justify-between">
-        <h2 className="font-bold text-[#1A3A3C]">Aplikasi Vendor</h2>
-        <div className="flex gap-2">
-          {FILTERS.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setFilter(f.value)}
-              className={`text-xs font-semibold px-3 py-2 rounded-xl transition-colors ${
-                filter === f.value ? "bg-[#1CABB4] text-white" : "bg-white text-[#4A7A6D] border border-[#D4EAC8]"
-              }`}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        {statCards.map((card) => {
+          const Icon = card.icon;
+          const content = (
+            <div
+              className={`bg-white/80 backdrop-blur rounded-2xl p-4 shadow-sm h-full transition-colors ${
+                card.needsAttention ? "border-2 border-[#F59E0B]/40" : "border border-transparent"
+              } ${card.href ? "hover:border-[#1CABB4]/40 cursor-pointer" : ""}`}
             >
-              {f.label}
-            </button>
-          ))}
-        </div>
+              <div className="flex items-center justify-between mb-3">
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                    card.needsAttention ? "bg-[#FFF7ED] text-[#F59E0B]" : "bg-[#E8F8F9] text-[#1CABB4]"
+                  }`}
+                >
+                  <Icon size={16} />
+                </div>
+                {card.needsAttention && (
+                  <span className="text-[9px] font-bold bg-[#F59E0B] text-white px-1.5 py-0.5 rounded-full">Perlu Aksi</span>
+                )}
+              </div>
+              <p className={`font-extrabold text-[#1A3A3C] ${card.isText ? "text-base" : "text-2xl"}`}>{card.value}</p>
+              <p className="text-[11px] text-[#8ABDB5] mt-0.5">{card.label}</p>
+            </div>
+          );
+
+          return card.href ? (
+            <Link key={card.label} href={card.href}>
+              {content}
+            </Link>
+          ) : (
+            <div key={card.label}>{content}</div>
+          );
+        })}
       </div>
 
-      {errorMsg && (
-        <div className="bg-[#FEF2F2] border border-[#EF4444]/20 rounded-xl px-4 py-3">
-          <p className="text-sm text-[#EF4444]">{errorMsg}</p>
+      <div className="bg-white/80 backdrop-blur rounded-2xl p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-[#1A3A3C] text-sm">Aktivitas Terbaru</h3>
         </div>
-      )}
 
-      {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="w-6 h-6 border-2 border-[#1CABB4] border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : applications.length === 0 ? (
-        <p className="text-center text-sm text-[#8ABDB5] py-16 bg-white/80 rounded-2xl">Tidak ada aplikasi vendor</p>
-      ) : (
-        <div className="space-y-3">
-          {applications.map((app) => {
-            const categoryLabel = categories.find((c) => c.id === app.category_id)?.name || app.category_id;
-            const isPending = app.status === "pending" || !app.status;
-            const portfolioUrls = app.portfolio_signed_urls ?? [];
-
-            return (
-              <div key={app.id} className="bg-white/80 backdrop-blur rounded-2xl p-5 shadow-sm">
-                <div className="flex items-start justify-between gap-4 mb-3">
-                  <div>
-                    <h3 className="font-bold text-[#1A3A3C]">{app.business_name}</h3>
-                    <p className="text-xs text-[#8ABDB5]">
-                      Diajukan oleh {app.applicant_name || "Pengguna"} ({app.applicant_email})
-                    </p>
-                  </div>
-                  <span
-                    className={`text-[10px] font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${
-                      app.status === "approved"
-                        ? "bg-[#DCFCE7] text-[#15803D]"
-                        : app.status === "rejected"
-                        ? "bg-[#FEF2F2] text-[#EF4444]"
-                        : "bg-[#FFF7ED] text-[#F59E0B]"
-                    }`}
-                  >
-                    {app.status === "approved" ? "Disetujui" : app.status === "rejected" ? "Ditolak" : "Menunggu"}
-                  </span>
+        {activity.length === 0 ? (
+          <p className="text-center text-sm text-[#8ABDB5] py-10">Belum ada aktivitas.</p>
+        ) : (
+          <div className="space-y-1">
+            {activity.map((item) => (
+              <div key={item.id} className="flex items-center gap-3 py-2.5 border-b border-[#EAF5E4] last:border-0">
+                <div className="w-8 h-8 rounded-lg bg-[#F0FBF5] flex items-center justify-center flex-shrink-0">
+                  {item.type === "application" ? (
+                    <Store size={14} className="text-[#1CABB4]" />
+                  ) : (
+                    <FileImage size={14} className="text-[#1CABB4]" />
+                  )}
                 </div>
-
-                <div className="grid md:grid-cols-4 gap-3 text-xs text-[#4A7A6D] mb-3">
-                  <div className="flex items-center gap-1.5">
-                    <MapPin size={12} /> {app.location}
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Phone size={12} /> {app.phone}
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Calendar size={12} /> {app.years_experience ? `${app.years_experience} tahun pengalaman` : "-"}
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Clock size={12} />{" "}
-                    {new Date(app.created_at).toLocaleDateString("id-ID", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-[#1A3A3C] truncate">{item.label}</p>
+                  <p className="text-[10px] text-[#8ABDB5]">{item.sublabel}</p>
                 </div>
-
-                <div className="flex items-center gap-2 mb-3 flex-wrap">
-                  <span className="text-xs bg-[#E8F8F9] text-[#1CABB4] font-semibold px-2.5 py-1 rounded-full">
-                    {categoryLabel}
-                  </span>
-                  {app.instagram_url ? (
-                    <a
-                      href={app.instagram_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs bg-[#FDF2F8] text-[#DB2777] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 hover:underline"
-                    >
-                      <AtSign size={11} />
-                      Instagram
-                    </a>
-                  ) : null}
+                <div className="flex items-center gap-1 text-[10px] text-[#8ABDB5] flex-shrink-0">
+                  <Clock size={10} />
+                  {new Date(item.timestamp).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
                 </div>
-
-                {app.description ? (
-                  <p className="text-sm text-[#4A7A6D] leading-relaxed mb-4">{app.description}</p>
-                ) : null}
-
-                {app.ktp_signed_url ? (
-                  <div className="mb-4">
-                    <p className="text-xs font-bold text-[#1A3A3C] mb-2 flex items-center gap-1.5">
-                      <IdCard size={13} />
-                      Foto KTP
-                    </p>
-                    <img
-                      src={app.ktp_signed_url!}
-                      alt="KTP"
-                      onClick={() => setPreviewImage(app.ktp_signed_url!)}
-                      className="w-40 h-28 object-cover rounded-xl border border-[#D4EAC8] cursor-pointer hover:opacity-90 transition-opacity"
-                    />
-                  </div>
-                ) : null}
-
-                {portfolioUrls.length > 0 ? (
-                  <div className="mb-4">
-                    <p className="text-xs font-bold text-[#1A3A3C] mb-2 flex items-center gap-1.5">
-                      <Images size={13} />
-                      Portofolio ({portfolioUrls.length} foto)
-                    </p>
-                    <div className="flex gap-2 flex-wrap">
-                      {portfolioUrls.map((url, i) => (
-                        <img
-                          key={i}
-                          src={url}
-                          alt={`Portofolio ${i + 1}`}
-                          onClick={() => setPreviewImage(url)}
-                          className="w-20 h-20 object-cover rounded-xl border border-[#D4EAC8] cursor-pointer hover:opacity-90 transition-opacity"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-
-                {isPending ? (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleApprove(app.id)}
-                      disabled={processingId === app.id}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-[#1CABB4] text-white text-sm font-bold py-2.5 rounded-xl hover:bg-[#178E96] transition-colors disabled:opacity-60"
-                    >
-                      {processingId === app.id ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                      Setujui
-                    </button>
-                    <button
-                      onClick={() => handleReject(app.id)}
-                      disabled={processingId === app.id}
-                      className="flex-1 flex items-center justify-center gap-1.5 border border-[#EF4444] text-[#EF4444] text-sm font-bold py-2.5 rounded-xl hover:bg-[#FEF2F2] transition-colors disabled:opacity-60"
-                    >
-                      <X size={14} />
-                      Tolak
-                    </button>
-                  </div>
-                ) : null}
               </div>
-            );
-          })}
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Link href="/admin/vendor-applications" className="flex items-center justify-between bg-white/80 backdrop-blur rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-[#E8F8F9] rounded-xl flex items-center justify-center">
+            <Store size={18} className="text-[#1CABB4]" />
+          </div>
+          <div>
+            <p className="font-bold text-[#1A3A3C] text-sm">Aplikasi Vendor</p>
+            <p className="text-xs text-[#8ABDB5]">Kelola pendaftaran vendor baru</p>
+          </div>
         </div>
-      )}
+        <ArrowRight size={18} className="text-[#8ABDB5]" />
+      </Link>
     </div>
   );
 }
