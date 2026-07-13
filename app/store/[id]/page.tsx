@@ -7,6 +7,8 @@ import { formatPrice, categories } from "@/data";
 import { useAuth } from "@/lib/useAuth";
 import { useWishlist } from "@/lib/useWishlist";
 import { getVendorById, SupabaseVendor } from "@/lib/vendors";
+import { getPortfolioImages, PortfolioImage } from "@/lib/sellerVendor";
+import { supabase } from "@/lib/supabase";
 import LoginPromptModal from "@/components/LoginPromptModal";
 
 const MONTHS = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
@@ -65,24 +67,15 @@ function MiniCalendar({ onSelect }: { onSelect?: (date: string) => void }) {
 }
 
 const TABS = ["Profil", "Paket", "Portofolio", "Ulasan", "Ketersediaan"];
-const PACKAGES = [
-  { name: "Paket Basic", desc: "Dokumentasi 1 hari | 3 fotografer | 100 foto editing", price: 3500000, popular: false },
-  { name: "Paket Silver", desc: "Dokumentasi 1 hari | 5 fotografer | 200 foto + album", price: 5500000, popular: true },
-  { name: "Paket Premium", desc: "Dokumentasi 2 hari | 7 fotografer | 300 foto + video", price: 9000000, popular: false },
-];
-const PORTFOLIO_IMGS = [
-  "https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=300&fit=crop",
-  "https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=400&h=300&fit=crop",
-  "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=400&h=300&fit=crop",
-  "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=400&h=300&fit=crop",
-  "https://images.unsplash.com/photo-1583939411023-14783179e581?w=400&h=300&fit=crop",
-  "https://images.unsplash.com/photo-1529636798458-92182e662485?w=400&h=300&fit=crop",
-];
-const REVIEWS = [
-  { name: "Dewi Santika", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=dewi", rating: 5, date: "20 Jun 2025", comment: "Hasilnya luar biasa! Foto-foto sangat natural dan elegan." },
-  { name: "Budi Prasetyo", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=budi", rating: 5, date: "12 Jun 2025", comment: "Sangat puas! Prewedding kami terasa seperti di majalah." },
-  { name: "Anita Lestari", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=anita", rating: 4, date: "5 Jun 2025", comment: "Hasilnya bagus, komunikasi responsif." },
-];
+
+type VendorReview = {
+  id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  buyer_name: string;
+  buyer_avatar: string | null;
+};
 
 export default function VendorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -98,6 +91,11 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
+  const [packages, setPackages] = useState<{ id: string; name: string; description: string | null; price: number; is_popular: boolean }[]>([]);
+  const [portfolio, setPortfolio] = useState<PortfolioImage[]>([]);
+  const [reviews, setReviews] = useState<VendorReview[]>([]);
+  const [avgRating, setAvgRating] = useState(0);
+
   useEffect(() => {
     async function fetchVendor() {
       const v = await getVendorById(id);
@@ -106,6 +104,69 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
     }
     fetchVendor();
   }, [id]);
+
+  useEffect(() => {
+    if (!vendor) return;
+
+    async function fetchPackages() {
+      const { data } = await supabase
+        .from("packages")
+        .select("id, name, description, price, is_popular")
+        .eq("vendor_id", vendor!.id)
+        .eq("is_active", true)
+        .order("price");
+      setPackages(data || []);
+    }
+
+    async function fetchPortfolio() {
+      const images = await getPortfolioImages(vendor!.id);
+      setPortfolio(images);
+    }
+
+    async function fetchReviews() {
+      const { data, error } = await supabase
+        .from("reviews")
+        .select("id, rating, comment, created_at, buyer_id")
+        .eq("vendor_id", vendor!.id)
+        .order("created_at", { ascending: false });
+
+      if (error || !data) {
+        setReviews([]);
+        setAvgRating(0);
+        return;
+      }
+
+      const buyerIds = [...new Set(data.map(r => r.buyer_id))];
+      let buyerMap: Record<string, { full_name: string; avatar_url: string | null }> = {};
+      if (buyerIds.length > 0) {
+        const { data: usersData } = await supabase
+          .from("users")
+          .select("id, full_name, avatar_url")
+          .in("id", buyerIds);
+        buyerMap = Object.fromEntries((usersData || []).map(u => [u.id, u]));
+      }
+
+      const mapped: VendorReview[] = data.map(r => ({
+        id: r.id,
+        rating: r.rating,
+        comment: r.comment,
+        created_at: r.created_at,
+        buyer_name: buyerMap[r.buyer_id]?.full_name || "Pengguna Festara",
+        buyer_avatar: buyerMap[r.buyer_id]?.avatar_url || null,
+      }));
+
+      setReviews(mapped);
+      if (mapped.length > 0) {
+        setAvgRating(mapped.reduce((sum, r) => sum + r.rating, 0) / mapped.length);
+      } else {
+        setAvgRating(0);
+      }
+    }
+
+    fetchPackages();
+    fetchPortfolio();
+    fetchReviews();
+  }, [vendor]);
 
   if (vendorLoading) {
     return (
@@ -176,6 +237,13 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
               <div className="flex items-center gap-3 flex-wrap mt-2.5 text-xs text-[#4A7A6D] leading-none">
                 <span className="inline-flex items-center bg-[#E8F8F9] text-[#1CABB4] font-semibold px-2.5 py-1 rounded-full leading-none">{categoryLabel}</span>
                 <div className="inline-flex items-center gap-1 leading-none"><MapPin size={11} className="flex-shrink-0" />{vendor.location || "-"}</div>
+                {reviews.length > 0 && (
+                  <div className="inline-flex items-center gap-1 leading-none">
+                    <Star size={11} fill="#F59E0B" className="text-[#F59E0B]" />
+                    <span className="font-semibold text-[#1A3A3C]">{avgRating.toFixed(1)}</span>
+                    <span>({reviews.length} ulasan)</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -188,6 +256,13 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
             <div className="flex items-center gap-3 flex-wrap mt-2.5 text-xs text-[#4A7A6D] leading-none">
               <span className="inline-flex items-center bg-[#E8F8F9] text-[#1CABB4] font-semibold px-2.5 py-1 rounded-full leading-none">{categoryLabel}</span>
               <div className="inline-flex items-center gap-1 leading-none"><MapPin size={11} className="flex-shrink-0" />{vendor.location || "-"}</div>
+              {reviews.length > 0 && (
+                <div className="inline-flex items-center gap-1 leading-none">
+                  <Star size={11} fill="#F59E0B" className="text-[#F59E0B]" />
+                  <span className="font-semibold text-[#1A3A3C]">{avgRating.toFixed(1)}</span>
+                  <span>({reviews.length} ulasan)</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -232,31 +307,35 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
         </div>
       )}
 
-      {/* TAB: Paket — masih statis, migrasi ke tabel packages menyusul */}
+      {/* TAB: Paket */}
       {tab === "Paket" && (
         <div className="grid md:grid-cols-3 gap-5">
           <div className="md:col-span-2 space-y-4">
             <h2 className="font-bold text-[#1A3A3C]">Pilihan Paket Harga</h2>
-            {PACKAGES.map((pkg, i) => (
-              <div key={i} onClick={() => setSelectedPkg(i)}
-                className={`bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5 cursor-pointer border-2 transition-all ${selectedPkg === i ? "border-[#1CABB4]" : "border-transparent hover:border-[#DBEBC9]"}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-bold text-[#1A3A3C]">{pkg.name}</h3>
-                      {pkg.popular && <span className="text-[10px] bg-[#1CABB4] text-white font-bold px-2 py-0.5 rounded-full">Terpopuler</span>}
+            {packages.length === 0 ? (
+              <p className="text-center text-sm text-[#8ABDB5] py-10 bg-white rounded-2xl">Vendor ini belum menambahkan paket layanan.</p>
+            ) : (
+              packages.map((pkg, i) => (
+                <div key={pkg.id} onClick={() => setSelectedPkg(i)}
+                  className={`bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5 cursor-pointer border-2 transition-all ${selectedPkg === i ? "border-[#1CABB4]" : "border-transparent hover:border-[#DBEBC9]"}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-bold text-[#1A3A3C]">{pkg.name}</h3>
+                        {pkg.is_popular && <span className="text-[10px] bg-[#1CABB4] text-white font-bold px-2 py-0.5 rounded-full">Terpopuler</span>}
+                      </div>
+                      <p className="text-sm text-[#4A7A6D]">{pkg.description}</p>
                     </div>
-                    <p className="text-sm text-[#4A7A6D]">{pkg.desc}</p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="font-extrabold text-[#1CABB4] text-lg">{formatPrice(pkg.price)}</p>
+                    <div className="text-right flex-shrink-0">
+                      <p className="font-extrabold text-[#1CABB4] text-lg">{formatPrice(pkg.price)}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-            {selectedPkg !== null && (
+              ))
+            )}
+            {selectedPkg !== null && packages[selectedPkg] && (
               <button onClick={goToChat} className="w-full bg-[#1CABB4] text-white font-bold text-center py-3.5 rounded-2xl hover:bg-[#178E96] transition-colors">
-                Booking {PACKAGES[selectedPkg].name} — Pilih Tanggal
+                Booking {packages[selectedPkg].name} — Pilih Tanggal
               </button>
             )}
           </div>
@@ -269,45 +348,74 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
         </div>
       )}
 
-      {/* TAB: Portofolio — masih statis, migrasi menyusul */}
+      {/* TAB: Portofolio — data asli dari Supabase */}
       {tab === "Portofolio" && (
         <div>
           <div className="flex items-center gap-2 mb-4">
             <Camera size={18} className="text-[#1CABB4]" />
-            <h2 className="font-bold text-[#1A3A3C]">Portofolio</h2>
+            <h2 className="font-bold text-[#1A3A3C]">Portofolio ({portfolio.length} karya)</h2>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {PORTFOLIO_IMGS.map((img, i) => (
-              <div key={i} className="relative aspect-[4/3] rounded-2xl overflow-hidden">
-                <img src={img} alt={`Portfolio ${i+1}`} className="w-full h-full object-cover" />
-              </div>
-            ))}
-          </div>
+          {portfolio.length === 0 ? (
+            <p className="text-center text-sm text-[#8ABDB5] py-16 bg-white rounded-2xl">Vendor ini belum menambahkan portofolio.</p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {portfolio.map((img) => (
+                <div key={img.id} className="relative aspect-[4/3] rounded-2xl overflow-hidden">
+                  <img src={img.image_url} alt="" className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* TAB: Ulasan — masih statis, migrasi ke tabel reviews menyusul */}
+      {/* TAB: Ulasan — data asli dari Supabase */}
       {tab === "Ulasan" && (
         <div className="grid md:grid-cols-3 gap-5">
           <div className="md:col-span-2">
             <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5">
-              <div className="space-y-4">
-                {REVIEWS.map((r, i) => (
-                  <div key={i} className="flex gap-3 pb-4 border-b border-[#EAF5E4] last:border-0">
-                    <img src={r.avatar} alt={r.name} className="w-10 h-10 rounded-full bg-[#E8F8F9] flex-shrink-0" />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-semibold text-[#1A3A3C]">{r.name}</span>
-                        <span className="text-xs text-[#8ABDB5]">{r.date}</span>
+              {reviews.length === 0 ? (
+                <p className="text-center text-sm text-[#8ABDB5] py-10">Belum ada ulasan untuk vendor ini.</p>
+              ) : (
+                <>
+                  <div className="flex items-center gap-6 mb-5">
+                    <div className="text-center">
+                      <div className="text-4xl font-extrabold text-[#1CABB4]">{avgRating.toFixed(1)}</div>
+                      <div className="flex gap-0.5 mt-1 justify-center">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star key={i} size={14} fill={i < Math.round(avgRating) ? "#F59E0B" : "transparent"} className={i < Math.round(avgRating) ? "text-[#F59E0B]" : "text-[#EAF5E4]"} />
+                        ))}
                       </div>
-                      <div className="flex gap-0.5 mb-1.5">
-                        {Array.from({length: r.rating}).map((_,j) => <Star key={j} size={11} fill="#F59E0B" className="text-[#F59E0B]" />)}
-                      </div>
-                      <p className="text-sm text-[#4A7A6D] leading-relaxed">{r.comment}</p>
+                      <p className="text-xs text-[#8ABDB5] mt-1">{reviews.length} ulasan</p>
                     </div>
                   </div>
-                ))}
-              </div>
+                  <div className="space-y-4">
+                    {reviews.map((r) => (
+                      <div key={r.id} className="flex gap-3 pb-4 border-b border-[#EAF5E4] last:border-0">
+                        <img
+                          src={r.buyer_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.buyer_name}`}
+                          alt={r.buyer_name}
+                          className="w-10 h-10 rounded-full bg-[#E8F8F9] flex-shrink-0 object-cover"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-semibold text-[#1A3A3C]">{r.buyer_name}</span>
+                            <span className="text-xs text-[#8ABDB5]">
+                              {new Date(r.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                            </span>
+                          </div>
+                          <div className="flex gap-0.5 mb-1.5">
+                            {Array.from({ length: r.rating }).map((_, j) => (
+                              <Star key={j} size={11} fill="#F59E0B" className="text-[#F59E0B]" />
+                            ))}
+                          </div>
+                          <p className="text-sm text-[#4A7A6D] leading-relaxed">{r.comment}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
