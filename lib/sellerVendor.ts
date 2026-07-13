@@ -9,6 +9,7 @@ export type VendorProfile = {
   location: string | null;
   logo_url: string | null;
   cover_url: string | null;
+  is_active: boolean;
 };
 
 export type VendorPackage = {
@@ -47,7 +48,7 @@ export async function getMyVendor(): Promise<VendorProfile | null> {
 
   const { data, error } = await supabase
     .from("vendors")
-    .select("id, user_id, name, category_id, description, location, logo_url, cover_url")
+    .select("id, user_id, name, category_id, description, location, logo_url, cover_url, is_active")
     .eq("user_id", user.id)
     .single();
 

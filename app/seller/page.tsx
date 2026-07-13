@@ -4,7 +4,7 @@ import {
   TrendingUp, Package, Users, DollarSign, ArrowUp,
   LayoutDashboard, ShoppingBag, MessageCircle, Calendar, Star,
   Image as ImageIcon, BarChart2, Settings, Bell, ChevronRight, Check, Clock,
-  MapPin, Edit, Trash2, Plus, Eye, X, Loader2
+  MapPin, Edit, Trash2, Plus, Eye, X, Loader2, AlertTriangle
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -90,6 +90,7 @@ export default function SellerDashboard() {
   const [settingsForm, setSettingsForm] = useState({ name: "", location: "", description: "" });
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
+  const [togglingActive, setTogglingActive] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -276,8 +277,28 @@ export default function SellerDashboard() {
     setSavingSettings(false);
   };
 
+  const handleToggleVendorActive = async () => {
+    if (!vendor) return;
+    const currentlyActive = (vendor as any).is_active !== false;
+    const actionText = currentlyActive ? "menonaktifkan" : "mengaktifkan kembali";
+    const confirmed = window.confirm(
+      currentlyActive
+        ? "Yakin ingin menonaktifkan toko? Vendor kamu akan hilang dari pencarian sampai diaktifkan kembali. Data, riwayat pesanan, dan ulasan tetap tersimpan."
+        : "Yakin ingin mengaktifkan kembali toko kamu? Vendor akan tampil lagi di pencarian."
+    );
+    if (!confirmed) return;
+
+    setTogglingActive(true);
+    const ok = await updateMyVendor(vendor.id, { is_active: !currentlyActive } as any);
+    if (ok) {
+      setVendor({ ...vendor, is_active: !currentlyActive } as any);
+    }
+    setTogglingActive(false);
+  };
+
   const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
   const categoryLabel = vendor ? (categories.find(c => c.id === vendor.category_id)?.name || "Vendor") : "";
+  const isVendorActive = vendor ? (vendor as any).is_active !== false : true;
 
   const monthlyBookingData = MONTHS_ID.map((m, i) => ({
     month: m.slice(0, 3),
@@ -324,6 +345,11 @@ export default function SellerDashboard() {
           Dashboard Vendor
         </h1>
         <div className="flex items-center gap-2">
+          {!isVendorActive && (
+            <span className="text-[10px] font-bold bg-[#FEF2F2] text-[#EF4444] px-2.5 py-1.5 rounded-full">
+              Toko Nonaktif
+            </span>
+          )}
           <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 shadow-sm">
             <img src={vendor.logo_url || `https://api.dicebear.com/7.x/shapes/svg?seed=${vendor.id}`} alt="" className="w-7 h-7 rounded-lg object-cover" />
             <span className="text-sm font-semibold text-[#1A3A3C] hidden md:block">{vendor.name}</span>
@@ -701,6 +727,34 @@ export default function SellerDashboard() {
                 <button onClick={handleSaveSettings} disabled={savingSettings}
                   className="w-full mt-4 bg-[#1CABB4] hover:bg-[#178E96] text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-60">
                   {savingSettings ? "Menyimpan..." : "Simpan Perubahan"}
+                </button>
+              </div>
+
+              {/* Zona Berbahaya — Nonaktifkan/Aktifkan Toko */}
+              <div className="bg-white/80 backdrop-blur rounded-2xl p-5 shadow-sm border-2 border-[#FEF2F2]">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle size={16} className="text-[#EF4444]" />
+                  <h3 className="font-bold text-sm text-[#EF4444]">Zona Berbahaya</h3>
+                </div>
+                <p className="text-xs text-[#8ABDB5] mb-4">
+                  {isVendorActive
+                    ? "Menonaktifkan toko akan menyembunyikan vendor kamu dari pencarian. Data, riwayat pesanan, dan ulasan tetap tersimpan — kamu bisa aktifkan kembali kapan saja."
+                    : "Toko kamu sedang nonaktif dan tidak tampil di pencarian. Aktifkan kembali agar calon pelanggan bisa menemukan vendor kamu lagi."}
+                </p>
+                <button
+                  onClick={handleToggleVendorActive}
+                  disabled={togglingActive}
+                  className={`w-full font-bold py-3 rounded-xl transition-colors disabled:opacity-60 ${
+                    isVendorActive
+                      ? "border-2 border-[#EF4444] text-[#EF4444] hover:bg-[#FEF2F2]"
+                      : "bg-[#1CABB4] text-white hover:bg-[#178E96]"
+                  }`}
+                >
+                  {togglingActive
+                    ? "Memproses..."
+                    : isVendorActive
+                      ? "Nonaktifkan Toko"
+                      : "Aktifkan Kembali Toko"}
                 </button>
               </div>
             </div>
