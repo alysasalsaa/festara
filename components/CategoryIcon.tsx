@@ -64,6 +64,15 @@ export default function CategoryIcon({ id, color, size = 32 }: { id: string; col
           <path d="M9 22h14"/>
         </svg>
       );
+    case "mua":
+      return (
+        <svg {...props}>
+          <path d="M12 20l-6 6a2.1 2.1 0 0 0 3 3l6-6"/>
+          <path d="M13.5 18.5l4-4"/>
+          <path d="M17 5c3 0 6 2 6 5.5 0 2.5-2 4-2 4l-6.5 6.5-5-5L16 9s1.5-2 1-4c0 0 0-0 0-0z"/>
+          <circle cx="24" cy="7" r="1.3" fill={color}/>
+        </svg>
+      );
     default:
       return (
         <svg {...props}>
