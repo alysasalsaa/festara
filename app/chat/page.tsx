@@ -57,6 +57,7 @@ function ChatBookingContent() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [detailTouched, setDetailTouched] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.push("/login");
@@ -105,6 +106,7 @@ function ChatBookingContent() {
   }, [vendorId]);
 
   const pkg = selectedPkg !== null ? packages[selectedPkg] : null;
+  const step1Valid = guestName.trim() !== "" && eventDate !== "" && eventLocation.trim() !== "";
 
   // Buat booking + catatan transaksi (transfer manual) begitu masuk step Pembayaran
   useEffect(() => {
@@ -377,9 +379,9 @@ function ChatBookingContent() {
               <div className="space-y-4">
                 <p className="text-xs font-bold text-[#1A3A3C]">Detail Acara</p>
                 <div>
-                  <p className="text-xs text-[#4A7A6D] mb-1.5">Nama Pengantin / Penanggung Jawab</p>
+                  <p className="text-xs text-[#4A7A6D] mb-1.5">Nama Pengantin / Penanggung Jawab <span className="text-[#EF4444]">*</span></p>
                   <input value={guestName} onChange={e => setGuestName(e.target.value)}
-                    className="w-full border border-[#D4EAC8] rounded-xl px-3 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] bg-[#F0FBF5]" />
+                    className={`w-full border rounded-xl px-3 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] bg-[#F0FBF5] ${detailTouched && !guestName.trim() ? "border-[#EF4444]" : "border-[#D4EAC8]"}`} />
                 </div>
                 <div>
                   <p className="text-xs text-[#4A7A6D] mb-1.5">Paket Dipilih</p>
@@ -388,15 +390,15 @@ function ChatBookingContent() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs text-[#4A7A6D] mb-1.5">Tanggal Acara</p>
+                  <p className="text-xs text-[#4A7A6D] mb-1.5">Tanggal Acara <span className="text-[#EF4444]">*</span></p>
                   <input type="date" value={eventDate} onChange={e => setEventDate(e.target.value)}
-                    className="w-full border border-[#D4EAC8] rounded-xl px-3 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] bg-[#F0FBF5]" />
+                    className={`w-full border rounded-xl px-3 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] bg-[#F0FBF5] ${detailTouched && !eventDate ? "border-[#EF4444]" : "border-[#D4EAC8]"}`} />
                 </div>
                 <div>
-                  <p className="text-xs text-[#4A7A6D] mb-1.5">Lokasi Acara</p>
+                  <p className="text-xs text-[#4A7A6D] mb-1.5">Lokasi Acara <span className="text-[#EF4444]">*</span></p>
                   <input value={eventLocation} onChange={e => setEventLocation(e.target.value)}
                     placeholder="Contoh: Kaliurang, Yogyakarta"
-                    className="w-full border border-[#D4EAC8] rounded-xl px-3 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] bg-[#F0FBF5]" />
+                    className={`w-full border rounded-xl px-3 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] bg-[#F0FBF5] ${detailTouched && !eventLocation.trim() ? "border-[#EF4444]" : "border-[#D4EAC8]"}`} />
                 </div>
                 <div>
                   <p className="text-xs text-[#4A7A6D] mb-1.5">Catatan <span className="text-[#8ABDB5]">(opsional)</span></p>
@@ -404,6 +406,9 @@ function ChatBookingContent() {
                     placeholder="Contoh: tema rustic, outdoor, golden hour..."
                     className="w-full border border-[#D4EAC8] rounded-xl px-3 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] resize-none placeholder:text-[#8ABDB5] bg-[#F0FBF5]" />
                 </div>
+                {detailTouched && !step1Valid && (
+                  <p className="text-[10px] text-[#EF4444]">Lengkapi semua kolom bertanda * sebelum lanjut ke pembayaran.</p>
+                )}
               </div>
             )}
 
@@ -450,7 +455,13 @@ function ChatBookingContent() {
 
           <div className="p-4 border-t border-[#EAF5E4]">
             {activeStep < 2 ? (
-              <button onClick={() => setActiveStep(s => Math.min(s + 1, 2))}
+              <button onClick={() => {
+                  if (activeStep === 1 && !step1Valid) {
+                    setDetailTouched(true);
+                    return;
+                  }
+                  setActiveStep(s => Math.min(s + 1, 2));
+                }}
                 disabled={activeStep === 0 && selectedPkg === null}
                 className="w-full bg-[#1CABB4] text-white text-sm font-bold py-3 rounded-xl hover:bg-[#178E96] transition-colors disabled:opacity-50">
                 {activeStep === 0 ? "Pilih Paket Ini" : "Konfirmasi Detail"}
