@@ -33,7 +33,7 @@ function ChatBookingContent() {
 
   const [activeStep, setActiveStep] = useState(0);
   const [selectedPkg, setSelectedPkg] = useState<number | null>(null);
-  const [eventDate, setEventDate] = useState("2026-11-12");
+  const [eventDate, setEventDate] = useState(searchParams.get("date") || "2026-11-12");
   const [eventLocation, setEventLocation] = useState("");
   const [guestName, setGuestName] = useState("");
   const [notes, setNotes] = useState("");

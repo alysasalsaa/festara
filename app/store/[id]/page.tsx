@@ -195,10 +195,10 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
     router.push(`/chat?vendor=${vendor.id}`);
   };
   const handleDateSelect = (date: string) => {
-    setSelectedDate(date);
-    if (!user) { setTimeout(() => setShowLoginModal(true), 300); return; }
-    setTimeout(() => router.push(`/chat?vendor=${vendor.id}`), 500);
-  };
+  setSelectedDate(date);
+  if (!user) { setTimeout(() => setShowLoginModal(true), 300); return; }
+  setTimeout(() => router.push(`/chat?vendor=${vendor.id}&date=${date}`), 500);
+};
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 py-6">
