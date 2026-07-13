@@ -641,6 +641,10 @@ export default function SellerDashboard() {
                 <div className="flex items-center gap-2 text-xs"><div className="w-3 h-3 rounded bg-white border border-[#D4EAC8]" /><span className="text-[#4A7A6D]">Tersedia</span></div>
               </div>
               <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[#EAF5E4]">
+                <div className="flex items-center gap-2 text-xs"><div className="w-3 h-3 rounded bg-[#FEE2E2] border border-[#FCA5A5]" /><span className="text-[#4A7A6D]">Sudah dibooking / tidak tersedia</span></div>
+                <div className="flex items-center gap-2 text-xs"><div className="w-3 h-3 rounded bg-white border border-[#D4EAC8]" /><span className="text-[#4A7A6D]">Tersedia</span></div>
+              </div>
+              <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[#EAF5E4]">
                 <div className="flex items-center gap-2 text-xs"><div className="w-3 h-3 rounded bg-[#1CABB4]" /><span className="text-[#4A7A6D]">Ada booking</span></div>
                 <div className="flex items-center gap-2 text-xs"><div className="w-3 h-3 rounded bg-[#DCFCE7]" /><span className="text-[#4A7A6D]">Tersedia</span></div>
                 <div className="flex items-center gap-2 text-xs"><div className="w-3 h-3 rounded bg-[#F0FBF5] border border-[#D4EAC8]" /><span className="text-[#4A7A6D]">Belum diatur</span></div>
