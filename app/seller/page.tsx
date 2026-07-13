@@ -4,7 +4,8 @@ import {
   TrendingUp, Package, Users, DollarSign, ArrowUp,
   LayoutDashboard, ShoppingBag, MessageCircle, Calendar, Star,
   Image as ImageIcon, BarChart2, Settings, Bell, ChevronRight, Check, Clock,
-  MapPin, Edit, Trash2, Plus, Eye, X, Loader2, AlertTriangle
+  MapPin, Edit, Trash2, Plus, Eye, X, Loader2, AlertTriangle,
+  CheckCircle2, Circle, ExternalLink
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -315,6 +316,20 @@ export default function SellerDashboard() {
     { label: "Ulasan", value: String(reviewCount), icon: Eye, color: "#F59E0B", bg: "#FFF7ED" },
   ];
 
+  // Checklist onboarding — bantu vendor baru tahu langkah selanjutnya, bukan sekadar angka nol
+  const onboardingSteps: { key: string; label: string; done: boolean; tab: Tab }[] = [
+    { key: "package", label: "Tambah minimal 1 paket layanan", done: packages.length > 0, tab: "paket" },
+    { key: "portfolio", label: "Upload minimal 1 foto portofolio", done: portfolio.length > 0, tab: "portofolio" },
+    { key: "description", label: "Lengkapi deskripsi toko", done: !!vendor?.description && vendor.description.trim().length > 0, tab: "pengaturan" },
+    { key: "availability", label: "Atur ketersediaan kalender bulan ini", done: availability.length > 0, tab: "kalender" },
+  ];
+  const onboardingDoneCount = onboardingSteps.filter(s => s.done).length;
+  const showOnboarding = onboardingDoneCount < onboardingSteps.length;
+
+  // Item yang butuh aksi vendor sekarang — pesan belum dibalas & pesanan menunggu konfirmasi
+  const pendingOrdersCount = orders.filter(o => o.status === "pending").length;
+  const needsAttentionTotal = totalUnread + pendingOrdersCount;
+
   if (vendorLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -337,7 +352,7 @@ export default function SellerDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <h1 className="text-xl font-bold text-[#1A3A3C] flex items-center gap-2" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
           <div className="w-8 h-8 bg-[#1CABB4] rounded-xl flex items-center justify-center">
             <LayoutDashboard size={15} className="text-white" />
@@ -350,6 +365,10 @@ export default function SellerDashboard() {
               Toko Nonaktif
             </span>
           )}
+          <a href={`/store/${vendor.id}`} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#1CABB4] bg-[#E8F8F9] px-3 py-2 rounded-xl hover:bg-[#D0F0F2] transition-colors">
+            <ExternalLink size={13} /> <span className="hidden sm:inline">Lihat Toko Saya</span>
+          </a>
           <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 shadow-sm">
             <img src={vendor.logo_url || `https://api.dicebear.com/7.x/shapes/svg?seed=${vendor.id}`} alt="" className="w-7 h-7 rounded-lg object-cover" />
             <span className="text-sm font-semibold text-[#1A3A3C] hidden md:block">{vendor.name}</span>
@@ -379,6 +398,60 @@ export default function SellerDashboard() {
             <>
               <h2 className="font-bold text-[#1A3A3C]">Ringkasan Bisnis</h2>
 
+              {showOnboarding && (
+                <div className="bg-white/80 backdrop-blur rounded-2xl p-5 shadow-sm border-2 border-[#1CABB4]/20">
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="font-bold text-sm text-[#1A3A3C]">Lengkapi Toko Kamu</h3>
+                    <span className="text-xs font-semibold text-[#1CABB4]">{onboardingDoneCount}/{onboardingSteps.length}</span>
+                  </div>
+                  <p className="text-xs text-[#8ABDB5] mb-4">Selesaikan langkah ini biar toko kamu lebih siap ditemukan calon pelanggan.</p>
+                  <div className="space-y-2">
+                    {onboardingSteps.map((step) => (
+                      <button key={step.key} onClick={() => setTab(step.tab)}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left bg-[#F0FBF5] hover:bg-[#E8F8F9] transition-colors">
+                        {step.done ? (
+                          <CheckCircle2 size={16} className="text-[#1CABB4] flex-shrink-0" />
+                        ) : (
+                          <Circle size={16} className="text-[#D4EAC8] flex-shrink-0" />
+                        )}
+                        <span className={`text-sm flex-1 ${step.done ? "text-[#8ABDB5] line-through" : "text-[#1A3A3C] font-medium"}`}>
+                          {step.label}
+                        </span>
+                        {!step.done && <ChevronRight size={14} className="text-[#8ABDB5]" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {needsAttentionTotal > 0 && (
+                <div className="bg-white/80 backdrop-blur rounded-2xl p-5 shadow-sm border-2 border-[#F59E0B]/30">
+                  <h3 className="font-bold text-sm text-[#1A3A3C] mb-3">Perlu Direspons</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {totalUnread > 0 && (
+                      <button onClick={() => setTab("inbox")}
+                        className="flex items-center gap-3 bg-[#FFF7ED] rounded-xl px-3 py-3 hover:bg-[#FFEFDA] transition-colors text-left">
+                        <MessageCircle size={16} className="text-[#F59E0B] flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-bold text-[#1A3A3C]">{totalUnread} pesan</p>
+                          <p className="text-[10px] text-[#8ABDB5]">Belum dibalas</p>
+                        </div>
+                      </button>
+                    )}
+                    {pendingOrdersCount > 0 && (
+                      <button onClick={() => setTab("pesanan")}
+                        className="flex items-center gap-3 bg-[#FFF7ED] rounded-xl px-3 py-3 hover:bg-[#FFEFDA] transition-colors text-left">
+                        <ShoppingBag size={16} className="text-[#F59E0B] flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-bold text-[#1A3A3C]">{pendingOrdersCount} pesanan</p>
+                          <p className="text-[10px] text-[#8ABDB5]">Menunggu konfirmasi</p>
+                        </div>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {statCards.map(card => (
                   <div key={card.label} className="bg-white/80 backdrop-blur rounded-2xl p-4 shadow-sm">
@@ -393,21 +466,28 @@ export default function SellerDashboard() {
 
               <div className="bg-white/80 backdrop-blur rounded-2xl p-5 shadow-sm">
                 <h3 className="font-bold text-sm text-[#1A3A3C] mb-4">Booking per Bulan ({new Date().getFullYear()})</h3>
-                <ResponsiveContainer width="100%" height={180}>
-                  <AreaChart data={monthlyBookingData}>
-                    <defs>
-                      <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#1CABB4" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="#1CABB4" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#EAF5E4" />
-                    <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#8ABDB5" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 11, fill: "#8ABDB5" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                    <Tooltip contentStyle={{ borderRadius: "12px", border: "none", fontSize: 12 }} />
-                    <Area type="monotone" dataKey="booking" stroke="#1CABB4" strokeWidth={2.5} fill="url(#grad)" dot={{ fill: "#1CABB4", r: 4, strokeWidth: 0 }} />
-                  </AreaChart>
-                </ResponsiveContainer>
+                {orders.length === 0 ? (
+                  <div className="py-10 text-center">
+                    <p className="text-sm text-[#8ABDB5]">Belum ada data booking untuk ditampilkan.</p>
+                    <p className="text-xs text-[#8ABDB5] mt-1">Grafik akan muncul otomatis begitu ada booking masuk.</p>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={180}>
+                    <AreaChart data={monthlyBookingData}>
+                      <defs>
+                        <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#1CABB4" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#1CABB4" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#EAF5E4" />
+                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#8ABDB5" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: "#8ABDB5" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                      <Tooltip contentStyle={{ borderRadius: "12px", border: "none", fontSize: 12 }} />
+                      <Area type="monotone" dataKey="booking" stroke="#1CABB4" strokeWidth={2.5} fill="url(#grad)" dot={{ fill: "#1CABB4", r: 4, strokeWidth: 0 }} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
               </div>
 
               <div className="bg-white/80 backdrop-blur rounded-2xl shadow-sm overflow-hidden">
@@ -664,15 +744,22 @@ export default function SellerDashboard() {
               <h2 className="font-bold text-[#1A3A3C]">Statistik Performa</h2>
               <div className="bg-white/80 backdrop-blur rounded-2xl p-5 shadow-sm">
                 <h3 className="font-bold text-sm text-[#1A3A3C] mb-4">Booking per Bulan</h3>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={monthlyBookingData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#EAF5E4" />
-                    <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#8ABDB5" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 11, fill: "#8ABDB5" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                    <Tooltip contentStyle={{ borderRadius: "12px", border: "none", fontSize: 12 }} />
-                    <Bar dataKey="booking" fill="#1CABB4" radius={[6,6,0,0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                {orders.length === 0 ? (
+                  <div className="py-10 text-center">
+                    <p className="text-sm text-[#8ABDB5]">Belum ada data booking untuk ditampilkan.</p>
+                    <p className="text-xs text-[#8ABDB5] mt-1">Grafik akan muncul otomatis begitu ada booking masuk.</p>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={monthlyBookingData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#EAF5E4" />
+                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#8ABDB5" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: "#8ABDB5" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                      <Tooltip contentStyle={{ borderRadius: "12px", border: "none", fontSize: 12 }} />
+                      <Bar dataKey="booking" fill="#1CABB4" radius={[6,6,0,0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
