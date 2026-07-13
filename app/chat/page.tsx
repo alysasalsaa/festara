@@ -11,10 +11,6 @@ import ChatThread from "@/components/ChatThread";
 
 const STEPS = ["Pilih Paket", "Detail Acara", "Pembayaran", "Konfirmasi"];
 
-const BANK_NAME = "Bank Syariah Indonesia (BSI)";
-const BANK_ACCOUNT_NUMBER = "7270591595";
-const BANK_ACCOUNT_NAME = "Irwan";
-
 type VendorPkg = {
   id: string;
   name: string;
@@ -58,6 +54,19 @@ function ChatBookingContent() {
   const [uploadError, setUploadError] = useState("");
   const [copied, setCopied] = useState(false);
   const [detailTouched, setDetailTouched] = useState(false);
+  const [bankInfo, setBankInfo] = useState({ bank_name: "", bank_account_number: "", bank_account_name: "" });
+
+  useEffect(() => {
+    async function fetchBankInfo() {
+      const { data } = await supabase
+        .from("platform_settings")
+        .select("bank_name, bank_account_number, bank_account_name")
+        .eq("id", 1)
+        .single();
+      if (data) setBankInfo(data);
+    }
+    fetchBankInfo();
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) router.push("/login");
@@ -254,7 +263,7 @@ function ChatBookingContent() {
   }
 
   function copyRekening() {
-    navigator.clipboard.writeText(BANK_ACCOUNT_NUMBER);
+    navigator.clipboard.writeText(bankInfo.bank_account_number);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -534,15 +543,15 @@ function ChatBookingContent() {
 
                 <p className="text-xs font-bold text-[#1A3A3C] mb-2">Transfer ke Rekening Berikut</p>
                 <div className="bg-[#F0FBF5] rounded-2xl p-4 border border-[#D4EAC8] mb-4">
-                  <p className="text-[10px] text-[#8ABDB5]">{BANK_NAME}</p>
+                  <p className="text-[10px] text-[#8ABDB5]">{bankInfo.bank_name}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <p className="text-lg font-extrabold text-[#1A3A3C] tracking-wide">{BANK_ACCOUNT_NUMBER}</p>
+                    <p className="text-lg font-extrabold text-[#1A3A3C] tracking-wide">{bankInfo.bank_account_number}</p>
                     <button onClick={copyRekening} className="text-[#1CABB4] hover:text-[#178E96]" title="Salin nomor rekening">
                       <Copy size={14} />
                     </button>
                     {copied && <span className="text-[9px] text-[#1CABB4] font-semibold">Disalin!</span>}
                   </div>
-                  <p className="text-xs text-[#4A7A6D] mt-0.5">a.n. {BANK_ACCOUNT_NAME}</p>
+                  <p className="text-xs text-[#4A7A6D] mt-0.5">a.n. {bankInfo.bank_account_name}</p>
                   <div className="border-t border-[#D4EAC8] mt-3 pt-3 flex justify-between items-center">
                     <span className="text-[10px] text-[#8ABDB5]">Jumlah Transfer</span>
                     <span className="text-sm font-extrabold text-[#1CABB4]">{formatPrice(pkg.price)}</span>

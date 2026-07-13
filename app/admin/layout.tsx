@@ -2,17 +2,25 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, ShieldCheck, Store, Wallet, CalendarCheck2, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, ShieldCheck, Store, Wallet, CalendarCheck2, Settings, LogOut, type LucideIcon } from "lucide-react";
 import { isCurrentUserAdmin } from "@/lib/admin";
 import { supabase } from "@/lib/supabase";
 
-const NAV_ITEMS = [
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  exact?: boolean;
+  comingSoon?: boolean;
+};
+
+const NAV_ITEMS: NavItem[] = [
   { href: "/admin", label: "Ringkasan", icon: LayoutDashboard, exact: true },
   { href: "/admin/vendor-applications", label: "Aplikasi Vendor", icon: Store },
   { href: "/admin/payments", label: "Verifikasi Pembayaran", icon: Wallet },
   { href: "/admin/bookings", label: "Semua Booking", icon: CalendarCheck2 },
   { href: "/admin/vendors", label: "Kelola Vendor", icon: Store },
-  { href: "/admin/settings", label: "Pengaturan", icon: Settings, comingSoon: true },
+  { href: "/admin/settings", label: "Pengaturan", icon: Settings },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
