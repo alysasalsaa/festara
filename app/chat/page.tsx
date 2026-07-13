@@ -37,9 +37,13 @@ function ChatBookingContent() {
   const [eventLocation, setEventLocation] = useState("");
   const [guestName, setGuestName] = useState("");
   const [notes, setNotes] = useState("");
-  const [paying, setPaying] = useState(false);
   const [paid, setPaid] = useState(false);
   const [payError, setPayError] = useState("");
+
+  const [bookingId, setBookingId] = useState<string | null>(null);
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [creatingTransaction, setCreatingTransaction] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) router.push("/login");
@@ -87,6 +91,75 @@ function ChatBookingContent() {
     fetchPackages();
   }, [vendorId]);
 
+  const pkg = selectedPkg !== null ? packages[selectedPkg] : null;
+
+  useEffect(() => {
+    async function createBookingAndTransaction() {
+      if (activeStep < 2 || !pkg || bookingId || !user || !vendor) return;
+
+      setCreatingTransaction(true);
+      setPayError("");
+
+      try {
+        const { data: booking, error: bookingError } = await supabase
+          .from("bookings")
+          .insert({
+            buyer_id: user.id,
+            vendor_id: vendor.id,
+            package_id: pkg.id,
+            event_date: eventDate,
+            event_location: eventLocation,
+            guest_name: guestName,
+            notes,
+            status: "pending",
+            total_price: pkg.price,
+          })
+          .select("id")
+          .single();
+
+        if (bookingError || !booking) {
+          throw new Error("Gagal menyimpan booking: " + bookingError?.message);
+        }
+
+        setBookingId(booking.id);
+
+        const newOrderId = `FST-${booking.id.slice(0, 8)}-${Date.now()}`;
+        setOrderId(newOrderId);
+
+        const res = await fetch("/api/midtrans/create-transaction", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: newOrderId, amount: pkg.price }),
+        });
+        const result = await res.json();
+
+        if (!result.success) {
+          throw new Error(result.error || "Gagal membuat transaksi pembayaran");
+        }
+
+        const qrAction = result.data.actions?.find((a: any) => a.name === "generate-qr-code");
+        if (qrAction) {
+          setQrUrl(qrAction.url);
+        }
+
+        await supabase.from("transactions").insert({
+          booking_id: booking.id,
+          order_id: newOrderId,
+          amount: pkg.price,
+          payment_method: "qris",
+          status: "pending",
+        });
+      } catch (err: any) {
+        console.error("Booking/transaction error:", err);
+        setPayError(err.message || "Terjadi kesalahan saat membuat pesanan.");
+      } finally {
+        setCreatingTransaction(false);
+      }
+    }
+
+    createBookingAndTransaction();
+  }, [activeStep, pkg, bookingId, user, vendor, eventDate, eventLocation, guestName, notes]);
+
   if (loading || vendorLoading || packagesLoading) return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="w-8 h-8 border-2 border-[#1CABB4] border-t-transparent rounded-full animate-spin" />
@@ -107,51 +180,6 @@ function ChatBookingContent() {
 
   const categoryLabel = categories.find(c => c.id === vendor.category_id)?.name || "Vendor";
   const logoImage = vendor.logo_url || "https://api.dicebear.com/7.x/shapes/svg?seed=" + vendor.id;
-  const pkg = selectedPkg !== null ? packages[selectedPkg] : null;
-
-  const handlePay = async () => {
-    if (!pkg) return;
-    setPaying(true);
-    setPayError("");
-
-    try {
-      const booking = {
-        id: `FST-${Date.now()}`,
-        date: new Date().toISOString().slice(0, 10),
-        status: "processing",
-        vendorName: vendor.name,
-        vendorLogo: logoImage,
-        category: categoryLabel,
-        paket: pkg.name,
-        eventDate,
-        eventLocation,
-        guestName,
-        notes,
-        total: pkg.price,
-        items: [{
-          productId: vendor.id,
-          name: `${pkg.name} — ${vendor.name}`,
-          qty: 1,
-          price: pkg.price,
-          image: logoImage,
-        }],
-        storeName: vendor.name,
-      };
-
-      const existing = JSON.parse(localStorage.getItem("festara_bookings") || "[]");
-      localStorage.setItem("festara_bookings", JSON.stringify([booking, ...existing]));
-
-      await new Promise(r => setTimeout(r, 1500));
-
-      setPaying(false);
-      setPaid(true);
-
-    } catch (e) {
-      console.error("Booking error:", e);
-      setPayError("Terjadi kesalahan. Silakan coba lagi.");
-      setPaying(false);
-    }
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
@@ -343,7 +371,7 @@ function ChatBookingContent() {
           </div>
         </div>
 
-        {/* ── PANEL 3: PEMBAYARAN (masih dummy, Midtrans menyusul) ── */}
+        {/* ── PANEL 3: PEMBAYARAN (QRIS asli dari Midtrans Sandbox) ── */}
         <div className="bg-white rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.08)] flex flex-col overflow-hidden" style={{ height: 600 }}>
           <div className="px-4 pt-4 pb-3 border-b border-[#EAF5E4]">
             <p className="text-xs font-bold text-[#1A3A3C]">Pembayaran</p>
@@ -367,16 +395,17 @@ function ChatBookingContent() {
                   <div className="bg-[#F0FBF5] rounded-2xl p-4 flex flex-col items-center border border-[#D4EAC8] mb-4">
                     <p className="text-xs text-[#8ABDB5] mb-3">Scan QR Code untuk membayar</p>
                     <div className="w-36 h-36 bg-white border-2 border-[#1CABB4] rounded-xl flex items-center justify-center overflow-hidden">
-                      <svg viewBox="0 0 100 100" className="w-full h-full p-2">
-                        {[0,1,2,3,4,5,6].map(r => [0,1,2,3,4,5,6].map(c => {
-                          const inCorner = (r<3&&c<3)||(r<3&&c>3)||(r>3&&c<3);
-                          const fill = inCorner || ((r * 7 + c * 3) % 2 === 0);
-                          return <rect key={`${r}-${c}`} x={c*14+1} y={r*14+1} width={12} height={12} fill={fill?"#1CABB4":"white"} rx={1} />;
-                        }))}
-                      </svg>
+                      {creatingTransaction ? (
+                        <div className="w-8 h-8 border-2 border-[#1CABB4] border-t-transparent rounded-full animate-spin" />
+                      ) : qrUrl ? (
+                        <img src={qrUrl} alt="QRIS Code" className="w-full h-full object-contain" />
+                      ) : (
+                        <p className="text-xs text-[#8ABDB5] text-center px-2">QR belum tersedia</p>
+                      )}
                     </div>
                     <p className="text-sm font-extrabold text-[#1CABB4] mt-3">{formatPrice(pkg.price)}</p>
                     <p className="text-[10px] text-[#8ABDB5] mt-0.5">{pkg.name} · {vendor.name}</p>
+                    {orderId && <p className="text-[9px] text-[#8ABDB5] mt-1">Order ID: {orderId}</p>}
                   </div>
                 </div>
 
@@ -384,14 +413,10 @@ function ChatBookingContent() {
                   <p className="text-xs text-[#EF4444] text-center mt-2">{payError}</p>
                 )}
 
-                <div className="w-full mt-4 space-y-2">
-                  <button onClick={handlePay} disabled={paying}
-                    className="w-full bg-[#1CABB4] text-white text-sm font-bold py-3 rounded-xl hover:bg-[#178E96] transition-colors disabled:opacity-70 flex items-center justify-center gap-2">
-                    {paying
-                      ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Memverifikasi...</>
-                      : "Saya Sudah Bayar"}
-                  </button>
-                  <p className="text-[10px] text-center text-[#8ABDB5]">Dana aman tersimpan hingga acara selesai</p>
+                <div className="w-full mt-4">
+                  <p className="text-[10px] text-center text-[#8ABDB5]">
+                    Ini environment Sandbox — gunakan Midtrans Simulator untuk simulasi pembayaran, bukan aplikasi e-wallet asli.
+                  </p>
                 </div>
               </>
             ) : (
