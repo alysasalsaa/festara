@@ -192,7 +192,8 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
 
   const goToChat = () => {
     if (!user) { setShowLoginModal(true); return; }
-    router.push(`/chat?vendor=${vendor.id}`);
+    const dateQuery = selectedDate ? `&date=${selectedDate}` : "";
+    router.push(`/chat?vendor=${vendor.id}${dateQuery}`);
   };
   const handleDateSelect = (date: string) => {
   setSelectedDate(date);
