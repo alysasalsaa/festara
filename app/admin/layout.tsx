@@ -65,7 +65,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Nav mobile — horizontal scroll, cuma menu yang sudah aktif */}
       <div className="md:hidden -mx-4 mb-4 relative">
-        <div className="px-4 overflow-x-auto">
+        <div className="px-4 overflow-x-auto scrollbar-hide">
           <div className="flex gap-2 w-max pr-6">
             {NAV_ITEMS.filter((item) => !item.comingSoon).map((item) => {
               const isActive = item.exact ? pathname === item.href : pathname?.startsWith(item.href);
