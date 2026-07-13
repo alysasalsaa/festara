@@ -14,12 +14,52 @@ import LoginPromptModal from "@/components/LoginPromptModal";
 const MONTHS = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 const DAYS = ["Min","Sen","Sel","Rab","Kam","Jum","Sab"];
 
-function MiniCalendar({ onSelect }: { onSelect?: (date: string) => void }) {
+function MiniCalendar({ vendorId, onSelect }: { vendorId: string; onSelect?: (date: string) => void }) {
   const today = new Date();
   const [month, setMonth] = useState(today.getMonth());
   const [year, setYear] = useState(today.getFullYear());
   const [selected, setSelected] = useState<number | null>(null);
-  const bookedDays = [3, 7, 14, 21, 28];
+  const [unavailableDays, setUnavailableDays] = useState<number[]>([]);
+  const [loadingAvailability, setLoadingAvailability] = useState(true);
+
+  useEffect(() => {
+    async function fetchAvailability() {
+      setLoadingAvailability(true);
+
+      const monthStr = String(month + 1).padStart(2, "0");
+      const from = `${year}-${monthStr}-01`;
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      const to = `${year}-${monthStr}-${String(lastDay).padStart(2, "0")}`;
+
+      const [{ data: availRows }, { data: bookedRows }] = await Promise.all([
+        supabase
+          .from("vendor_availability")
+          .select("date, is_available")
+          .eq("vendor_id", vendorId)
+          .gte("date", from)
+          .lte("date", to),
+        supabase
+          .from("vendor_booked_dates")
+          .select("event_date")
+          .eq("vendor_id", vendorId)
+          .gte("event_date", from)
+          .lte("event_date", to),
+      ]);
+
+      const days = new Set<number>();
+      (availRows || []).forEach((row) => {
+        if (row.is_available === false) days.add(Number(row.date.split("-")[2]));
+      });
+      (bookedRows || []).forEach((row) => {
+        days.add(Number(row.event_date.split("-")[2]));
+      });
+
+      setUnavailableDays(Array.from(days));
+      setLoadingAvailability(false);
+    }
+    fetchAvailability();
+  }, [vendorId, month, year]);
+
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const prev = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); };
@@ -39,25 +79,31 @@ function MiniCalendar({ onSelect }: { onSelect?: (date: string) => void }) {
       <div className="grid grid-cols-7 gap-0.5 mb-1">
         {DAYS.map(d => <div key={d} className="text-center text-[10px] font-semibold text-[#8ABDB5] py-1">{d}</div>)}
       </div>
-      <div className="grid grid-cols-7 gap-0.5">
-        {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
-        {Array.from({ length: daysInMonth }).map((_, i) => {
-          const day = i + 1;
-          const isBooked = bookedDays.includes(day);
-          const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
-          const isSel = selected === day;
-          return (
-            <button key={day} onClick={() => !isBooked && handleSelect(day)}
-              className={`aspect-square flex items-center justify-center text-xs rounded-lg transition-colors
-                ${isBooked ? "bg-[#FEE2E2] text-[#EF4444] cursor-not-allowed" :
-                  isSel ? "bg-[#1CABB4] text-white font-bold" :
-                  isToday ? "border-2 border-[#1CABB4] text-[#1CABB4] font-bold" :
-                  "hover:bg-[#E8F8F9] text-[#1A3A3C]"}`}>
-              {day}
-            </button>
-          );
-        })}
-      </div>
+      {loadingAvailability ? (
+        <div className="flex items-center justify-center py-10">
+          <div className="w-5 h-5 border-2 border-[#1CABB4] border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-7 gap-0.5">
+          {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const day = i + 1;
+            const isBooked = unavailableDays.includes(day);
+            const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+            const isSel = selected === day;
+            return (
+              <button key={day} onClick={() => !isBooked && handleSelect(day)}
+                className={`aspect-square flex items-center justify-center text-xs rounded-lg transition-colors
+                  ${isBooked ? "bg-[#FEE2E2] text-[#EF4444] cursor-not-allowed" :
+                    isSel ? "bg-[#1CABB4] text-white font-bold" :
+                    isToday ? "border-2 border-[#1CABB4] text-[#1CABB4] font-bold" :
+                    "hover:bg-[#E8F8F9] text-[#1A3A3C]"}`}>
+                {day}
+              </button>
+            );
+          })}
+        </div>
+      )}
       <div className="flex items-center gap-3 mt-3 pt-3 border-t border-[#EAF5E4]">
         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-[#FEE2E2]" /><span className="text-[10px] text-[#8ABDB5]">Tidak tersedia</span></div>
         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-[#1CABB4]" /><span className="text-[10px] text-[#8ABDB5]">Dipilih</span></div>
@@ -301,7 +347,7 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
             <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5">
               <h2 className="font-bold text-[#1A3A3C] mb-1">Pilih Tanggal Acara</h2>
               <p className="text-xs text-[#8ABDB5] mb-3">Klik tanggal → langsung ke booking</p>
-              <MiniCalendar onSelect={handleDateSelect} />
+              <MiniCalendar vendorId={vendor.id} onSelect={handleDateSelect} />
               {selectedDate && <p className="text-xs text-center text-[#1CABB4] font-semibold mt-2 animate-pulse">{user ? "Mengarahkan ke booking..." : "Silakan login dulu..."}</p>}
             </div>
           </div>
@@ -343,7 +389,7 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
           <div>
             <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5">
               <h2 className="font-bold text-[#1A3A3C] mb-1">Pilih Tanggal Acara</h2>
-              <MiniCalendar onSelect={handleDateSelect} />
+              <MiniCalendar vendorId={vendor.id} onSelect={handleDateSelect} />
             </div>
           </div>
         </div>
@@ -427,7 +473,7 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
         <div className="grid md:grid-cols-2 gap-5">
           <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5">
             <h2 className="font-bold text-[#1A3A3C] mb-1">Pilih Tanggal Acara</h2>
-            <MiniCalendar onSelect={handleDateSelect} />
+            <MiniCalendar vendorId={vendor.id} onSelect={handleDateSelect} />
             {selectedDate && <p className="text-xs text-center text-[#1CABB4] font-semibold mt-2 animate-pulse">{user ? "Mengarahkan ke booking..." : "Silakan login dulu..."}</p>}
           </div>
         </div>
