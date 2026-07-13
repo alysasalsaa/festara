@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import MobileNav from "@/components/MobileNav";
 import ToastProvider from "@/components/ToastProvider";
 import PageTransition from "@/components/PageTransition";
+import RealtimeNotificationToast from "@/components/RealtimeNotificationToast";
 
 export const metadata: Metadata = {
   title: "Festara — Platform Vendor Pernikahan & Event",
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           backgroundAttachment: "fixed",
         }}>
         <ToastProvider />
+        <RealtimeNotificationToast />
         <Navbar />
         <PageTransition>
           <main className="pb-20 md:pb-0">{children}</main>
