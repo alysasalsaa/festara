@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { href: "/admin", label: "Ringkasan", icon: LayoutDashboard, exact: true },
   { href: "/admin/vendor-applications", label: "Aplikasi Vendor", icon: Store },
   { href: "/admin/payments", label: "Verifikasi Pembayaran", icon: Wallet },
-  { href: "/admin/bookings", label: "Semua Booking", icon: CalendarCheck2, comingSoon: true },
+  { href: "/admin/bookings", label: "Semua Booking", icon: CalendarCheck2 },
   { href: "/admin/vendors", label: "Kelola Vendor", icon: Store, comingSoon: true },
   { href: "/admin/settings", label: "Pengaturan", icon: Settings, comingSoon: true },
 ];
