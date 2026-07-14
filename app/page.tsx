@@ -44,6 +44,18 @@ export default function HomePage() {
   const [featuredLoading, setFeaturedLoading] = useState(true);
 
   useEffect(() => {
+    if (typeof window === "undefined" || !window.location.hash) return;
+    const id = window.location.hash.slice(1);
+    // Tunggu sebentar supaya animasi masuk halaman (PageTransition) selesai dulu,
+    // baru scroll manual ke elemen anchor-nya — browser sering gagal auto-scroll
+    // karena elemen belum "settle" posisinya waktu masih dianimasikan.
+    const timer = setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 400);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
     async function fetchFeatured() {
       const { data, error } = await supabase
         .from("vendors")
