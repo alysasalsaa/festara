@@ -56,39 +56,24 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    async function fetchFeatured() {
-      const { data, error } = await supabase
-        .from("vendors")
-        .select("id, name, category_id, description, logo_url, cover_url, rating, packages(price, is_active)")
-        .eq("is_active", true)
-        .order("rating", { ascending: false, nullsFirst: false })
-        .limit(3);
-
-      if (error || !data) {
-        setFeaturedVendors([]);
-        setFeaturedLoading(false);
-        return;
-      }
-
-      const mapped: FeaturedVendor[] = data.map((v: any) => {
-        const activePackages = (v.packages || []).filter((p: any) => p.is_active);
-        const minPrice = activePackages.length > 0 ? Math.min(...activePackages.map((p: any) => p.price)) : null;
-        return {
-          id: v.id,
-          name: v.name,
-          category_id: v.category_id,
-          description: v.description,
-          logo_url: v.logo_url,
-          cover_url: v.cover_url,
-          rating: v.rating,
-          minPrice,
-        };
-      });
-
-      setFeaturedVendors(mapped);
-      setFeaturedLoading(false);
+    function scrollToHash(delay: number) {
+      if (!window.location.hash) return;
+      const id = window.location.hash.slice(1);
+      setTimeout(() => {
+        document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, delay);
     }
-    fetchFeatured();
+
+    // Kalau halaman ini baru dimuat langsung dengan hash di URL (misal buka dari halaman lain)
+    scrollToHash(400);
+
+    // Kalau user sudah di halaman ini dan klik link hash — browser cuma ganti hash tanpa reload,
+    // jadi perlu didengarkan terpisah lewat event "hashchange"
+    function handleHashChange() {
+      scrollToHash(100);
+    }
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
   return (
