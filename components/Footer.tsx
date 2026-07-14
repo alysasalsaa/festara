@@ -1,4 +1,5 @@
-import { Link2, MessageCircle, PlayCircle, Globe, Mail, Phone } from "lucide-react";
+import { Link2, MessageCircle, PlayCircle, Globe, Mail } from "lucide-react";
+import Link from "next/link";
 
 const CATEGORY_LINKS = [
   { label: "Wedding Organizer", href: "/search?cat=wedding-organizer" },
@@ -11,20 +12,22 @@ const CATEGORY_LINKS = [
 ];
 
 const VENDOR_LINKS = [
-  { label: "Daftarkan Vendor", href: "/register" },
+  { label: "Daftarkan Vendor", href: "/" },
   { label: "Dashboard Vendor", href: "/seller" },
-  { label: "Panduan Booking", href: "/help" },
-  { label: "Sistem Escrow", href: "/help" },
-  { label: "Komunitas", href: "/help" },
+  { label: "Panduan Booking", href: "/#cara-kerja" },
+  { label: "Sistem Escrow", href: "/#keunggulan" },
 ];
 
 const HELP_LINKS = [
-  { label: "Pusat Bantuan", href: "/help" },
-  { label: "Cara Booking", href: "/help" },
-  { label: "Cara Pembayaran", href: "/help" },
+  { label: "Pusat Bantuan", href: "mailto:halo@festara.id" },
+  { label: "Cara Booking", href: "/#cara-kerja" },
+  { label: "Cara Pembayaran", href: "/#keunggulan" },
   { label: "Lacak Pesanan", href: "/dashboard" },
-  { label: "Kebijakan Privasi", href: "/help" },
 ];
+
+function isInternalLink(href: string) {
+  return href.startsWith("/") && !href.startsWith("//");
+}
 
 export default function Footer() {
   return (
@@ -62,10 +65,10 @@ export default function Footer() {
             <ul className="space-y-2.5">
               {CATEGORY_LINKS.map(link => (
                 <li key={link.label}>
-                  <a href={link.href}
+                  <Link href={link.href}
                     className="text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors">
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -77,10 +80,10 @@ export default function Footer() {
             <ul className="space-y-2.5">
               {VENDOR_LINKS.map(link => (
                 <li key={link.label}>
-                  <a href={link.href}
+                  <Link href={link.href}
                     className="text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors">
                     {link.label}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -92,10 +95,17 @@ export default function Footer() {
             <ul className="space-y-2.5">
               {HELP_LINKS.map(link => (
                 <li key={link.label}>
-                  <a href={link.href}
-                    className="text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors">
-                    {link.label}
-                  </a>
+                  {isInternalLink(link.href) ? (
+                    <Link href={link.href}
+                      className="text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors">
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a href={link.href}
+                      className="text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors">
+                      {link.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
@@ -109,12 +119,9 @@ export default function Footer() {
           </div>
           <p className="text-[#8ABDB5] text-xs">© 2026 Festara. Platform vendor pernikahan & event terpercaya.</p>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5 text-[#8ABDB5] text-xs">
-              <Mail size={12} /><span>support@festara.id</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-[#8ABDB5] text-xs">
-              <Phone size={12} /><span>0800-FESTARA</span>
-            </div>
+            <a href="mailto:halo@festara.id" className="flex items-center gap-1.5 text-[#8ABDB5] hover:text-[#DBEBC9] text-xs transition-colors">
+              <Mail size={12} /><span>halo@festara.id</span>
+            </a>
           </div>
         </div>
       </div>
