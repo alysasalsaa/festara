@@ -8,13 +8,19 @@ import CategoryIcon from "@/components/CategoryIcon";
 import { useAuth } from "@/lib/useAuth";
 import { supabase } from "@/lib/supabase";
 
+const GMAIL_COMPOSE_URL = `https://mail.google.com/mail/?view=cm&fs=1&to=halo@festara.id&su=${encodeURIComponent("Bantuan Festara")}`;
+
 const NAV_LINKS = [
   { href: "/", label: "Beranda" },
   { href: "/search", label: "Cari Vendor" },
   { href: "/category", label: "Kategori" },
-  { href: "/about", label: "Tentang Kami" },
-  { href: "/help", label: "Bantuan" },
+  { href: "/#keunggulan", label: "Tentang Kami" },
+  { href: GMAIL_COMPOSE_URL, label: "Bantuan" },
 ];
+
+function isExternalLink(href: string) {
+  return href.startsWith("http");
+}
 
 const FestaraLogo = () => (
   <svg width="26" height="32" viewBox="0 0 28 34" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -35,9 +41,34 @@ export default function Navbar() {
   const { user } = useAuth();
 
   useEffect(() => {
-    const bookings = JSON.parse(localStorage.getItem("festara_bookings") || "[]");
-    setUnreadCount(bookings.length);
-  }, []);
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
+
+    async function fetchUnread() {
+      const { count } = await supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user!.id)
+        .eq("is_read", false);
+      setUnreadCount(count || 0);
+    }
+    fetchUnread();
+
+    const channel = supabase
+      .channel(`navbar-notifications-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        () => fetchUnread()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -92,6 +123,11 @@ export default function Navbar() {
                   </div>
                 )}
               </div>
+            ) : isExternalLink(link.href) ? (
+              <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer"
+                className="px-2 py-2 rounded-xl text-xs font-medium transition-colors text-[#4A7A6D] hover:text-[#1CABB4] hover:bg-[#E8F8F9]">
+                {link.label}
+              </a>
             ) : (
               <Link key={link.href} href={link.href}
                 className={`px-2 py-2 rounded-xl text-xs font-medium transition-colors
@@ -120,7 +156,7 @@ export default function Navbar() {
 
         {/* Right icons */}
         <div className="flex items-center gap-1 ml-auto">
-          {/* Notifikasi */}
+          {/* Notifikasi — badge dari tabel notifications asli */}
           <Link href="/notifications" className="relative p-2 rounded-xl hover:bg-[#E8F8F9] transition-colors">
             <Bell size={20} className="text-[#4A7A6D]" />
             {unreadCount > 0 && (
@@ -223,13 +259,20 @@ export default function Navbar() {
 
           {/* Mobile nav links */}
           <div className="flex flex-col gap-0.5">
-            {NAV_LINKS.map(link => (
-              <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)}
-                className={`px-4 py-3 rounded-xl text-sm font-medium transition-colors
-                  ${pathname === link.href ? "text-[#1CABB4] bg-[#E8F8F9]" : "text-[#4A7A6D] hover:bg-[#F0FBF5]"}`}>
-                {link.label}
-              </Link>
-            ))}
+            {NAV_LINKS.map(link =>
+              isExternalLink(link.href) ? (
+                <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer" onClick={() => setMenuOpen(false)}
+                  className="px-4 py-3 rounded-xl text-sm font-medium transition-colors text-[#4A7A6D] hover:bg-[#F0FBF5]">
+                  {link.label}
+                </a>
+              ) : (
+                <Link key={link.href} href={link.href} onClick={() => setMenuOpen(false)}
+                  className={`px-4 py-3 rounded-xl text-sm font-medium transition-colors
+                    ${pathname === link.href ? "text-[#1CABB4] bg-[#E8F8F9]" : "text-[#4A7A6D] hover:bg-[#F0FBF5]"}`}>
+                  {link.label}
+                </Link>
+              )
+            )}
           </div>
 
           {/* Mobile categories */}
