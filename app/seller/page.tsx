@@ -70,6 +70,8 @@ export default function SellerDashboard() {
   const [revenue, setRevenue] = useState(0);
   const [avgRating, setAvgRating] = useState<number | null>(null);
   const [reviewCount, setReviewCount] = useState(0);
+  const [responseRate, setResponseRate] = useState<number | null>(null);
+  const [avgResponseTime, setAvgResponseTime] = useState<string | null>(null);
 
   const [packages, setPackages] = useState<VendorPackage[]>([]);
   const [portfolio, setPortfolio] = useState<PortfolioImage[]>([]);
@@ -201,6 +203,65 @@ export default function SellerDashboard() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
+  }, [vendor]);
+
+  useEffect(() => {
+    if (!vendor) return;
+
+    async function computeResponseRate() {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("sender_id, receiver_id, created_at")
+        .or(`sender_id.eq.${vendor!.user_id},receiver_id.eq.${vendor!.user_id}`)
+        .order("created_at", { ascending: true });
+
+      if (error || !data || data.length === 0) {
+        setResponseRate(null);
+        setAvgResponseTime(null);
+        return;
+      }
+
+      // Kelompokkan pesan per lawan bicara (buyer)
+      const conversations = new Map<string, { sender_id: string; created_at: string }[]>();
+      for (const m of data) {
+        const otherId = m.sender_id === vendor!.user_id ? m.receiver_id : m.sender_id;
+        if (!conversations.has(otherId)) conversations.set(otherId, []);
+        conversations.get(otherId)!.push(m);
+      }
+
+      let totalInitiated = 0;
+      let totalResponded = 0;
+      const responseTimesMs: number[] = [];
+
+      conversations.forEach((msgs) => {
+        const firstBuyerMsg = msgs.find((m) => m.sender_id !== vendor!.user_id);
+        if (!firstBuyerMsg) return; // vendor yang mulai duluan, bukan buyer -> tidak dihitung
+
+        totalInitiated += 1;
+        const firstBuyerTime = new Date(firstBuyerMsg.created_at).getTime();
+        const vendorReply = msgs.find(
+          (m) => m.sender_id === vendor!.user_id && new Date(m.created_at).getTime() > firstBuyerTime
+        );
+
+        if (vendorReply) {
+          totalResponded += 1;
+          responseTimesMs.push(new Date(vendorReply.created_at).getTime() - firstBuyerTime);
+        }
+      });
+
+      setResponseRate(totalInitiated === 0 ? null : Math.round((totalResponded / totalInitiated) * 100));
+
+      if (responseTimesMs.length > 0) {
+        const avgMinutes = (responseTimesMs.reduce((a, b) => a + b, 0) / responseTimesMs.length) / 60000;
+        if (avgMinutes < 60) setAvgResponseTime(`~${Math.round(avgMinutes)} menit`);
+        else if (avgMinutes < 1440) setAvgResponseTime(`~${Math.round(avgMinutes / 60)} jam`);
+        else setAvgResponseTime(`~${Math.round(avgMinutes / 1440)} hari`);
+      } else {
+        setAvgResponseTime(null);
+      }
+    }
+
+    computeResponseRate();
   }, [vendor]);
 
   const handleAddPackage = async () => {
@@ -614,6 +675,9 @@ export default function SellerDashboard() {
                 </div>
               </div>
               <p className="text-xs text-[#8ABDB5] mb-4">Klik tanggal untuk tandai tersedia / tidak tersedia</p>
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {DAYS_ID.map(d => <div key={d} className="text-center text-[10px] font-bold text-[#8ABDB5] py-1">{d}</div>)}
+              </div>
               <div className="grid grid-cols-7 gap-1">
                 {Array.from({ length: firstDayOfMonth }).map((_, i) => <div key={`e${i}`} />)}
                 {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -764,6 +828,8 @@ export default function SellerDashboard() {
                   { label: "Rating Rata-rata", value: avgRating ? avgRating.toFixed(1) : "Belum ada data", icon: <Star size={16} className="text-[#F59E0B]" />, bg: "#FFF7ED" },
                   { label: "Total Ulasan", value: String(reviewCount), icon: <Eye size={16} className="text-[#6366F1]" />, bg: "#EEF2FF" },
                   { label: "Area Layanan", value: vendor.location || "Belum diisi", icon: <MapPin size={16} className="text-[#22C55E]" />, bg: "#DCFCE7" },
+                  { label: "Response Rate", value: responseRate != null ? `${responseRate}%` : "Belum ada data", icon: <MessageCircle size={16} className="text-[#1CABB4]" />, bg: "#E8F8F9" },
+                  { label: "Rata-rata Waktu Respons", value: avgResponseTime || "Belum ada data", icon: <Clock size={16} className="text-[#F59E0B]" />, bg: "#FFF7ED" },
                 ].map(item => (
                   <div key={item.label} className="bg-white/80 backdrop-blur rounded-2xl p-4 shadow-sm">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: item.bg }}>
@@ -775,7 +841,7 @@ export default function SellerDashboard() {
                 ))}
               </div>
               <p className="text-xs text-[#8ABDB5] text-center">
-                Metrik seperti Response Rate dan Profile Views belum tersedia — perlu sistem tracking tambahan.
+                Metrik Profile Views belum tersedia — perlu sistem tracking tambahan.
               </p>
             </div>
           )}
