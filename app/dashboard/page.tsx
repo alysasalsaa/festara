@@ -8,38 +8,89 @@ import { useWishlist } from "@/lib/useWishlist";
 import { supabase } from "@/lib/supabase";
 import VendorRegisterForm from "@/components/VendorRegisterForm";
 
-const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  pending:    { label: "Menunggu Bayar",      color: "text-[#F59E0B] bg-[#FFF7ED]",  icon: <Clock size={12} /> },
-  paid:       { label: "DP Terkonfirmasi",    color: "text-[#1CABB4] bg-[#E8F8F9]",  icon: <CheckCircle2 size={12} /> },
-  processing: { label: "Menunggu Konfirmasi", color: "text-[#6366F1] bg-[#EEF2FF]",  icon: <RotateCcw size={12} /> },
-  confirmed:  { label: "Terkonfirmasi",       color: "text-[#22C55E] bg-[#DCFCE7]",  icon: <CheckCircle2 size={12} /> },
-  delivered:  { label: "Acara Selesai",       color: "text-[#15803D] bg-[#DCFCE7]",  icon: <CheckCircle2 size={12} /> },
-  cancelled:  { label: "Dibatalkan",          color: "text-[#EF4444] bg-[#FEF2F2]",  icon: <XCircle size={12} /> },
-};
-
 type Tab = "orders" | "wishlist" | "notifications" | "addresses" | "profile";
 
-interface Booking {
-  id: string; date: string; status: string; vendorName: string; vendorLogo: string;
-  category: string; paket: string; eventDate: string; eventLocation: string;
-  guestName: string; total: number;
-  items: { productId: string; name: string; qty: number; price: number; image: string }[];
-  storeName: string;
+type BookingRow = {
+  id: string;
+  event_date: string;
+  event_location: string | null;
+  guest_name: string;
+  status: string;
+  total_price: number;
+  created_at: string;
+  vendors: { id: string; name: string; logo_url: string | null } | null;
+  packages: { name: string } | null;
+  transactions: { status: string; order_id: string; rejection_reason: string | null }[] | null;
+};
+
+function getStatusInfo(booking: BookingRow): { label: string; color: string; icon: React.ReactNode } {
+  const trx = booking.transactions?.[0];
+
+  if (booking.status === "cancelled") {
+    return { label: "Dibatalkan", color: "text-[#EF4444] bg-[#FEF2F2]", icon: <XCircle size={12} /> };
+  }
+  if (booking.status === "completed") {
+    return { label: "Acara Selesai", color: "text-[#15803D] bg-[#DCFCE7]", icon: <CheckCircle2 size={12} /> };
+  }
+  if (!trx || trx.status === "pending") {
+    return { label: "Menunggu Pembayaran", color: "text-[#F59E0B] bg-[#FFF7ED]", icon: <Clock size={12} /> };
+  }
+  if (trx.status === "waiting_verification") {
+    return { label: "Menunggu Verifikasi", color: "text-[#F59E0B] bg-[#FFF7ED]", icon: <RotateCcw size={12} /> };
+  }
+  if (trx.status === "rejected") {
+    return { label: "Bukti Ditolak", color: "text-[#EF4444] bg-[#FEF2F2]", icon: <XCircle size={12} /> };
+  }
+  if (trx.status === "paid" || trx.status === "disbursed") {
+    return { label: "Terkonfirmasi", color: "text-[#22C55E] bg-[#DCFCE7]", icon: <CheckCircle2 size={12} /> };
+  }
+  return { label: "Diproses", color: "text-[#6366F1] bg-[#EEF2FF]", icon: <RotateCcw size={12} /> };
 }
 
 export default function DashboardPage() {
   const [tab, setTab] = useState<Tab>("orders");
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookings, setBookings] = useState<BookingRow[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(true);
   const [vendorStatus, setVendorStatus] = useState<"none" | "pending" | "approved">("none");
   const [showVendorForm, setShowVendorForm] = useState(false);
   const [vendorApplied, setVendorApplied] = useState(false);
   const { user } = useAuth();
   const { wishlist } = useWishlist();
 
+  async function fetchBookings(userId: string) {
+    const { data, error } = await supabase
+      .from("bookings")
+      .select(
+        `id, event_date, event_location, guest_name, status, total_price, created_at,
+        vendors ( id, name, logo_url ),
+        packages ( name ),
+        transactions ( status, order_id, rejection_reason )`
+      )
+      .eq("buyer_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (!error && data) setBookings(data as unknown as BookingRow[]);
+    setBookingsLoading(false);
+  }
+
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("festara_bookings") || "[]");
-    setBookings(saved);
-  }, []);
+    if (!user) return;
+    fetchBookings(user.id);
+
+    // Dengarkan realtime perubahan status transaksi (misal admin baru saja verifikasi pembayaran)
+    const channel = supabase
+      .channel(`buyer-orders-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "transactions" },
+        () => fetchBookings(user.id)
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -174,14 +225,18 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* PESANAN */}
+          {/* PESANAN — data asli dari Supabase (bookings + transactions) */}
           {tab === "orders" && (
             <div className="bg-white rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] overflow-hidden">
               <div className="px-6 py-4 border-b border-[#EAF5E4] flex items-center justify-between">
                 <h2 className="font-bold text-[#1A3A3C]">Pesanan Saya</h2>
                 {bookings.length > 0 && <span className="text-xs bg-[#1CABB4] text-white font-bold px-2.5 py-1 rounded-full">{bookings.length} booking</span>}
               </div>
-              {bookings.length === 0 ? (
+              {bookingsLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="w-6 h-6 border-2 border-[#1CABB4] border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : bookings.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center px-6">
                   <div className="text-6xl mb-4">📋</div>
                   <h3 className="text-base font-bold text-[#1A3A3C] mb-2">Belum ada booking</h3>
@@ -191,37 +246,48 @@ export default function DashboardPage() {
               ) : (
                 <div className="divide-y divide-[#EAF5E4]">
                   {bookings.map(order => {
-                    const st = statusConfig[order.status] || statusConfig["processing"];
+                    const st = getStatusInfo(order);
+                    const trx = order.transactions?.[0];
+                    const logoImage = order.vendors?.logo_url || "https://api.dicebear.com/7.x/shapes/svg?seed=" + (order.vendors?.id || order.id);
+
                     return (
                       <div key={order.id} className="p-5">
                         <div className="flex items-center justify-between mb-3">
                           <div>
-                            <p className="text-xs font-mono text-[#8ABDB5]">{order.id}</p>
-                            <p className="text-xs text-[#8ABDB5]">{order.date} · {order.storeName}</p>
+                            {trx?.order_id && <p className="text-xs font-mono text-[#8ABDB5]">{trx.order_id}</p>}
+                            <p className="text-xs text-[#8ABDB5]">
+                              {new Date(order.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })} · {order.vendors?.name || "Vendor"}
+                            </p>
                           </div>
                           <span className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${st.color}`}>{st.icon} {st.label}</span>
                         </div>
+
+                        {st.label === "Bukti Ditolak" && trx?.rejection_reason && (
+                          <div className="bg-[#FEF2F2] rounded-xl px-3 py-2 mb-3">
+                            <p className="text-xs text-[#B91C1C]">Alasan: {trx.rejection_reason}</p>
+                          </div>
+                        )}
+
                         <div className="flex gap-3 mb-3">
-                          <img src={order.items[0].image} alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-[#D4EAC8]" />
+                          <img src={logoImage} alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-[#D4EAC8]" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs text-[#8ABDB5] mb-0.5">{order.storeName}</p>
-                            <p className="text-sm font-semibold text-[#1A3A3C] line-clamp-2">{order.items[0].name}</p>
-                            {order.eventDate && (
+                            <p className="text-xs text-[#8ABDB5] mb-0.5">{order.vendors?.name || "Vendor"}</p>
+                            <p className="text-sm font-semibold text-[#1A3A3C] line-clamp-2">{order.packages?.name || "Paket"}</p>
+                            {order.event_date && (
                               <div className="flex items-center gap-1 text-xs text-[#8ABDB5] mt-1">
                                 <Calendar size={11} />
-                                {new Date(order.eventDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                                {new Date(order.event_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
                               </div>
                             )}
-                            <p className="text-sm font-bold text-[#1CABB4] mt-1">{formatPrice(order.total)}</p>
+                            <p className="text-sm font-bold text-[#1CABB4] mt-1">{formatPrice(order.total_price)}</p>
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Link href="/chat" className="flex items-center gap-1 text-xs border border-[#D4EAC8] text-[#4A7A6D] font-semibold px-3 py-2 rounded-xl hover:border-[#1CABB4] hover:text-[#1CABB4] transition-colors">
-                            <MessageCircle size={12} /> Chat Vendor
-                          </Link>
-                          <button className="flex items-center gap-1 text-xs border border-[#D4EAC8] text-[#4A7A6D] font-semibold px-3 py-2 rounded-xl hover:border-[#1CABB4] hover:text-[#1CABB4] transition-colors">
-                            Detail Booking
-                          </button>
+                          {order.vendors?.id && (
+                            <Link href={`/chat?vendor=${order.vendors.id}`} className="flex items-center gap-1 text-xs border border-[#D4EAC8] text-[#4A7A6D] font-semibold px-3 py-2 rounded-xl hover:border-[#1CABB4] hover:text-[#1CABB4] transition-colors">
+                              <MessageCircle size={12} /> Chat Vendor
+                            </Link>
+                          )}
                         </div>
                       </div>
                     );
