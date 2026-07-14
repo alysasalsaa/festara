@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { User, Package, Heart, Bell, MapPin, Settings, ChevronRight, Star, CheckCircle2, Clock, XCircle, RotateCcw, Calendar, MessageCircle, X, Store } from "lucide-react";
-import { notifications, formatPrice, categories } from "@/data";
+import { formatPrice, categories } from "@/data";
 import { useAuth } from "@/lib/useAuth";
 import { useWishlist } from "@/lib/useWishlist";
 import { supabase } from "@/lib/supabase";
@@ -32,6 +32,23 @@ type WishlistVendor = {
   cover_url: string | null;
   minPrice: number | null;
 };
+
+type NotificationRow = {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+};
+
+function getNotificationIcon(type: string): { emoji: string; bg: string } {
+  if (type.includes("payment")) return { emoji: "💳", bg: "bg-[#E8F8F9]" };
+  if (type.includes("vendor")) return { emoji: "🏪", bg: "bg-[#FFF7ED]" };
+  if (type.includes("chat") || type.includes("message")) return { emoji: "💬", bg: "bg-[#EEF2FF]" };
+  if (type.includes("booking") || type.includes("order")) return { emoji: "📅", bg: "bg-[#E8F8F9]" };
+  return { emoji: "🔔", bg: "bg-[#F0FBF5]" };
+}
 
 function getStatusInfo(booking: BookingRow): { label: string; color: string; icon: React.ReactNode } {
   const trx = booking.transactions?.[0];
@@ -68,6 +85,43 @@ export default function DashboardPage() {
   const { wishlist } = useWishlist();
   const [wishlistVendors, setWishlistVendors] = useState<WishlistVendor[]>([]);
   const [wishlistLoading, setWishlistLoading] = useState(true);
+  const [notificationsList, setNotificationsList] = useState<NotificationRow[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(true);
+
+  async function fetchNotifications(userId: string) {
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (!error && data) setNotificationsList(data as NotificationRow[]);
+    setNotificationsLoading(false);
+  }
+
+  useEffect(() => {
+    if (!user) return;
+    fetchNotifications(user.id);
+
+    const channel = supabase
+      .channel(`buyer-notifications-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        () => fetchNotifications(user.id)
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  async function markAllNotificationsRead() {
+    if (!user) return;
+    setNotificationsList((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    await supabase.from("notifications").update({ is_read: true }).eq("user_id", user.id).eq("is_read", false);
+  }
 
   useEffect(() => {
     async function fetchWishlistVendors() {
@@ -341,30 +395,49 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* NOTIFIKASI */}
+          {/* NOTIFIKASI — data asli dari Supabase */}
           {tab === "notifications" && (
             <div className="bg-white rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] overflow-hidden">
               <div className="px-6 py-4 border-b border-[#EAF5E4] flex items-center justify-between">
                 <h2 className="font-bold text-[#1A3A3C]">Notifikasi</h2>
-                <button className="text-xs text-[#1CABB4] font-semibold">Tandai semua dibaca</button>
+                {notificationsList.some((n) => !n.is_read) && (
+                  <button onClick={markAllNotificationsRead} className="text-xs text-[#1CABB4] font-semibold">Tandai semua dibaca</button>
+                )}
               </div>
-              <div className="divide-y divide-[#EAF5E4]">
-                {notifications.map(n => (
-                  <div key={n.id} className={`flex gap-3 p-5 ${!n.isRead ? "bg-[#F0FBF5]" : ""}`}>
-                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 text-lg ${n.type === "order" ? "bg-[#E8F8F9]" : n.type === "promo" ? "bg-[#FFF7ED]" : n.type === "chat" ? "bg-[#EEF2FF]" : "bg-[#F0FBF5]"}`}>
-                      {n.type === "order" ? "📅" : n.type === "promo" ? "🎁" : n.type === "chat" ? "💬" : "🔔"}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-semibold text-[#1A3A3C]">{n.title}</p>
-                        {!n.isRead && <div className="w-2 h-2 bg-[#1CABB4] rounded-full flex-shrink-0 mt-1" />}
+              {notificationsLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="w-6 h-6 border-2 border-[#1CABB4] border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : notificationsList.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center px-6">
+                  <div className="text-5xl mb-3">🔔</div>
+                  <p className="font-bold text-[#1A3A3C] mb-1">Belum ada notifikasi</p>
+                  <p className="text-sm text-[#8ABDB5]">Notifikasi soal pesanan & pembayaran akan muncul di sini</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-[#EAF5E4]">
+                  {notificationsList.map((n) => {
+                    const icon = getNotificationIcon(n.type);
+                    return (
+                      <div key={n.id} className={`flex gap-3 p-5 ${!n.is_read ? "bg-[#F0FBF5]" : ""}`}>
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 text-lg ${icon.bg}`}>
+                          {icon.emoji}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-sm font-semibold text-[#1A3A3C]">{n.title}</p>
+                            {!n.is_read && <div className="w-2 h-2 bg-[#1CABB4] rounded-full flex-shrink-0 mt-1" />}
+                          </div>
+                          <p className="text-xs text-[#4A7A6D] mt-0.5 leading-relaxed">{n.message}</p>
+                          <p className="text-[10px] text-[#8ABDB5] mt-1">
+                            {new Date(n.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-xs text-[#4A7A6D] mt-0.5 leading-relaxed">{n.message}</p>
-                      <p className="text-[10px] text-[#8ABDB5] mt-1">{n.date}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
