@@ -22,6 +22,10 @@ function isExternalLink(href: string) {
   return href.startsWith("http");
 }
 
+function needsPlainAnchor(href: string) {
+  return href.startsWith("http") || href.includes("#");
+}
+
 const FestaraLogo = () => (
   <svg width="26" height="32" viewBox="0 0 28 34" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M14 1L27 12H1L14 1Z" fill="#178E96"/>
@@ -123,8 +127,9 @@ export default function Navbar() {
                   </div>
                 )}
               </div>
-            ) : isExternalLink(link.href) ? (
-              <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer"
+            ) : needsPlainAnchor(link.href) ? (
+              <a key={link.href} href={link.href}
+                {...(isExternalLink(link.href) ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 className="px-2 py-2 rounded-xl text-xs font-medium transition-colors text-[#4A7A6D] hover:text-[#1CABB4] hover:bg-[#E8F8F9]">
                 {link.label}
               </a>
@@ -260,8 +265,10 @@ export default function Navbar() {
           {/* Mobile nav links */}
           <div className="flex flex-col gap-0.5">
             {NAV_LINKS.map(link =>
-              isExternalLink(link.href) ? (
-                <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer" onClick={() => setMenuOpen(false)}
+              needsPlainAnchor(link.href) ? (
+                <a key={link.href} href={link.href}
+                  {...(isExternalLink(link.href) ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                  onClick={() => setMenuOpen(false)}
                   className="px-4 py-3 rounded-xl text-sm font-medium transition-colors text-[#4A7A6D] hover:bg-[#F0FBF5]">
                   {link.label}
                 </a>
