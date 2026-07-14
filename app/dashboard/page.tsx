@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { User, Package, Heart, Bell, MapPin, Settings, ChevronRight, Star, CheckCircle2, Clock, XCircle, RotateCcw, Calendar, MessageCircle, X, Store } from "lucide-react";
-import { notifications, formatPrice, vendors } from "@/data";
+import { notifications, formatPrice, categories } from "@/data";
 import { useAuth } from "@/lib/useAuth";
 import { useWishlist } from "@/lib/useWishlist";
 import { supabase } from "@/lib/supabase";
@@ -21,6 +21,16 @@ type BookingRow = {
   vendors: { id: string; name: string; logo_url: string | null } | null;
   packages: { name: string } | null;
   transactions: { status: string; order_id: string; rejection_reason: string | null }[] | null;
+};
+
+type WishlistVendor = {
+  id: string;
+  name: string;
+  category_id: string;
+  location: string | null;
+  logo_url: string | null;
+  cover_url: string | null;
+  minPrice: number | null;
 };
 
 function getStatusInfo(booking: BookingRow): { label: string; color: string; icon: React.ReactNode } {
@@ -56,6 +66,42 @@ export default function DashboardPage() {
   const [vendorApplied, setVendorApplied] = useState(false);
   const { user } = useAuth();
   const { wishlist } = useWishlist();
+  const [wishlistVendors, setWishlistVendors] = useState<WishlistVendor[]>([]);
+  const [wishlistLoading, setWishlistLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchWishlistVendors() {
+      if (wishlist.length === 0) {
+        setWishlistVendors([]);
+        setWishlistLoading(false);
+        return;
+      }
+      setWishlistLoading(true);
+      const { data, error } = await supabase
+        .from("vendors")
+        .select("id, name, category_id, location, logo_url, cover_url, packages(price, is_active)")
+        .in("id", wishlist);
+
+      if (!error && data) {
+        const mapped: WishlistVendor[] = data.map((v: any) => {
+          const activePackages = (v.packages || []).filter((p: any) => p.is_active);
+          const minPrice = activePackages.length > 0 ? Math.min(...activePackages.map((p: any) => p.price)) : null;
+          return {
+            id: v.id,
+            name: v.name,
+            category_id: v.category_id,
+            location: v.location,
+            logo_url: v.logo_url,
+            cover_url: v.cover_url,
+            minPrice,
+          };
+        });
+        setWishlistVendors(mapped);
+      }
+      setWishlistLoading(false);
+    }
+    fetchWishlistVendors();
+  }, [wishlist]);
 
   async function fetchBookings(userId: string) {
     const { data, error } = await supabase
@@ -106,8 +152,6 @@ export default function DashboardPage() {
   const avatarLetter = fullName[0]?.toUpperCase() || "?";
   const joinDate = user?.created_at
     ? new Date(user.created_at).toLocaleDateString("id-ID", { month: "long", year: "numeric" }) : "";
-
-  const wishlistVendors = vendors.filter(v => wishlist.includes(v.id));
 
   const sideItems: { id: Tab; icon: React.ReactNode; label: string }[] = [
     { id: "profile",       icon: <User size={17} />,    label: "Profil Saya" },
@@ -324,11 +368,15 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* WISHLIST */}
+          {/* WISHLIST — data asli dari Supabase */}
           {tab === "wishlist" && (
             <div className="bg-white rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-6">
               <h2 className="font-bold text-[#1A3A3C] mb-5">Wishlist Vendor</h2>
-              {wishlistVendors.length === 0 ? (
+              {wishlistLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="w-6 h-6 border-2 border-[#1CABB4] border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : wishlistVendors.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="text-5xl mb-3">🤍</div>
                   <p className="font-bold text-[#1A3A3C] mb-2">Wishlist masih kosong</p>
@@ -339,20 +387,24 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {wishlistVendors.map(v => (
-                    <Link key={v.id} href={`/store/${v.id}`}
-                      className="border border-[#D4EAC8] rounded-2xl overflow-hidden hover:border-[#1CABB4] hover:shadow-[0_4px_16px_rgba(28,171,180,0.12)] transition-all group">
-                      <div className="relative h-32 overflow-hidden">
-                        <img src={v.image} alt={v.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                        <span className="absolute top-2 left-2 bg-[#1CABB4] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{v.categoryLabel}</span>
-                      </div>
-                      <div className="p-3">
-                        <p className="text-sm font-bold text-[#1A3A3C] line-clamp-1">{v.name}</p>
-                        <p className="text-xs text-[#8ABDB5] mt-0.5">{v.location}</p>
-                        <p className="text-sm font-bold text-[#1CABB4] mt-1">Mulai {formatPrice(v.price)}</p>
-                      </div>
-                    </Link>
-                  ))}
+                  {wishlistVendors.map(v => {
+                    const categoryLabel = categories.find(c => c.id === v.category_id)?.name || "Vendor";
+                    const coverImage = v.cover_url || "https://images.unsplash.com/photo-1519741497674-611481863552?w=800&h=400&fit=crop";
+                    return (
+                      <Link key={v.id} href={`/store/${v.id}`}
+                        className="border border-[#D4EAC8] rounded-2xl overflow-hidden hover:border-[#1CABB4] hover:shadow-[0_4px_16px_rgba(28,171,180,0.12)] transition-all group">
+                        <div className="relative h-32 overflow-hidden">
+                          <img src={coverImage} alt={v.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          <span className="absolute top-2 left-2 bg-[#1CABB4] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{categoryLabel}</span>
+                        </div>
+                        <div className="p-3">
+                          <p className="text-sm font-bold text-[#1A3A3C] line-clamp-1">{v.name}</p>
+                          <p className="text-xs text-[#8ABDB5] mt-0.5">{v.location || "-"}</p>
+                          <p className="text-sm font-bold text-[#1CABB4] mt-1">{v.minPrice != null ? `Mulai ${formatPrice(v.minPrice)}` : "Hubungi vendor"}</p>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               )}
             </div>
