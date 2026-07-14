@@ -1,4 +1,6 @@
-import { Link2, MessageCircle, PlayCircle, Globe, Mail } from "lucide-react";
+"use client";
+import { useState } from "react";
+import { Link2, MessageCircle, PlayCircle, Globe, Mail, Check } from "lucide-react";
 import Link from "next/link";
 
 const CATEGORY_LINKS = [
@@ -18,18 +20,21 @@ const VENDOR_LINKS = [
   { label: "Sistem Escrow", href: "/#keunggulan" },
 ];
 
-const HELP_LINKS = [
-  { label: "Pusat Bantuan", href: "mailto:halo@festara.id" },
-  { label: "Cara Booking", href: "/#cara-kerja" },
-  { label: "Cara Pembayaran", href: "/#keunggulan" },
-  { label: "Lacak Pesanan", href: "/dashboard" },
-];
+const SUPPORT_EMAIL = "halo@festara.id";
 
-function isInternalLink(href: string) {
-  return href.startsWith("/") && !href.startsWith("//");
+function isHashLink(href: string) {
+  return href.includes("#");
 }
 
 export default function Footer() {
+  const [copied, setCopied] = useState(false);
+
+  function copyEmail() {
+    navigator.clipboard.writeText(SUPPORT_EMAIL);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   return (
     <footer className="bg-[#16302e] text-white hidden md:block">
       <div className="max-w-7xl mx-auto px-6 py-12">
@@ -80,10 +85,17 @@ export default function Footer() {
             <ul className="space-y-2.5">
               {VENDOR_LINKS.map(link => (
                 <li key={link.label}>
-                  <Link href={link.href}
-                    className="text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors">
-                    {link.label}
-                  </Link>
+                  {isHashLink(link.href) ? (
+                    <a href={link.href}
+                      className="text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors">
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link href={link.href}
+                      className="text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors">
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
@@ -93,21 +105,28 @@ export default function Footer() {
           <div>
             <h4 className="font-bold mb-4 text-sm text-[#DBEBC9]">Bantuan</h4>
             <ul className="space-y-2.5">
-              {HELP_LINKS.map(link => (
-                <li key={link.label}>
-                  {isInternalLink(link.href) ? (
-                    <Link href={link.href}
-                      className="text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors">
-                      {link.label}
-                    </Link>
-                  ) : (
-                    <a href={link.href}
-                      className="text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors">
-                      {link.label}
-                    </a>
-                  )}
-                </li>
-              ))}
+              <li>
+                <button onClick={copyEmail}
+                  className="flex items-center gap-1.5 text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors text-left">
+                  {copied ? <Check size={13} className="text-[#1CABB4]" /> : null}
+                  {copied ? "Email disalin!" : "Pusat Bantuan"}
+                </button>
+              </li>
+              <li>
+                <a href="/#cara-kerja" className="text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors">
+                  Cara Booking
+                </a>
+              </li>
+              <li>
+                <a href="/#keunggulan" className="text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors">
+                  Cara Pembayaran
+                </a>
+              </li>
+              <li>
+                <Link href="/dashboard" className="text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors">
+                  Lacak Pesanan
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
@@ -119,9 +138,10 @@ export default function Footer() {
           </div>
           <p className="text-[#8ABDB5] text-xs">© 2026 Festara. Platform vendor pernikahan & event terpercaya.</p>
           <div className="flex items-center gap-4">
-            <a href="mailto:halo@festara.id" className="flex items-center gap-1.5 text-[#8ABDB5] hover:text-[#DBEBC9] text-xs transition-colors">
-              <Mail size={12} /><span>halo@festara.id</span>
-            </a>
+            <button onClick={copyEmail} className="flex items-center gap-1.5 text-[#8ABDB5] hover:text-[#DBEBC9] text-xs transition-colors">
+              {copied ? <Check size={12} className="text-[#1CABB4]" /> : <Mail size={12} />}
+              <span>{copied ? "Disalin!" : SUPPORT_EMAIL}</span>
+            </button>
           </div>
         </div>
       </div>
