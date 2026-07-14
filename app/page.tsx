@@ -44,18 +44,6 @@ export default function HomePage() {
   const [featuredLoading, setFeaturedLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !window.location.hash) return;
-    const id = window.location.hash.slice(1);
-    // Tunggu sebentar supaya animasi masuk halaman (PageTransition) selesai dulu,
-    // baru scroll manual ke elemen anchor-nya — browser sering gagal auto-scroll
-    // karena elemen belum "settle" posisinya waktu masih dianimasikan.
-    const timer = setTimeout(() => {
-      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 400);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
     function scrollToHash(delay: number) {
       if (!window.location.hash) return;
       const id = window.location.hash.slice(1);
@@ -74,6 +62,42 @@ export default function HomePage() {
     }
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  useEffect(() => {
+    async function fetchFeatured() {
+      const { data, error } = await supabase
+        .from("vendors")
+        .select("id, name, category_id, description, logo_url, cover_url, rating, packages(price, is_active)")
+        .eq("is_active", true)
+        .order("rating", { ascending: false, nullsFirst: false })
+        .limit(3);
+
+      if (error || !data) {
+        setFeaturedVendors([]);
+        setFeaturedLoading(false);
+        return;
+      }
+
+      const mapped: FeaturedVendor[] = data.map((v: any) => {
+        const activePackages = (v.packages || []).filter((p: any) => p.is_active);
+        const minPrice = activePackages.length > 0 ? Math.min(...activePackages.map((p: any) => p.price)) : null;
+        return {
+          id: v.id,
+          name: v.name,
+          category_id: v.category_id,
+          description: v.description,
+          logo_url: v.logo_url,
+          cover_url: v.cover_url,
+          rating: v.rating,
+          minPrice,
+        };
+      });
+
+      setFeaturedVendors(mapped);
+      setFeaturedLoading(false);
+    }
+    fetchFeatured();
   }, []);
 
   return (
@@ -159,7 +183,7 @@ export default function HomePage() {
       Lihat Semua <ArrowRight size={14} />
     </Link>
   </div>
-  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 auto-rows-fr">
+  <div className="grid grid-cols-3 md:grid-cols-7 gap-3 auto-rows-fr">
     {categories.map((cat, i) => (
       <motion.div key={cat.id}
         initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.06 }}
@@ -242,7 +266,7 @@ export default function HomePage() {
       </AnimatedSection>
 
       {/* Cara Kerja */}
-      <AnimatedSection className="max-w-7xl mx-auto px-4 md:px-6">
+      <AnimatedSection id="cara-kerja" className="max-w-7xl mx-auto px-4 md:px-6 scroll-mt-24">
         <div className="bg-white/80 backdrop-blur rounded-3xl p-7 md:p-10">
           <h2 className="text-xl md:text-2xl font-bold text-[#0D545A] text-center mb-2"
             style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>Cara Kerja Festara</h2>
@@ -267,7 +291,7 @@ export default function HomePage() {
       </AnimatedSection>
 
       {/* Keunggulan */}
-      <AnimatedSection className="max-w-7xl mx-auto px-4 md:px-6">
+      <AnimatedSection id="keunggulan" className="max-w-7xl mx-auto px-4 md:px-6 scroll-mt-24">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { icon: <Shield size={28} className="text-[#1CABB4]" />, title: "Pembayaran Aman", desc: "Dana tersimpan di escrow, hanya cair setelah acara selesai dan kamu konfirmasi" },
