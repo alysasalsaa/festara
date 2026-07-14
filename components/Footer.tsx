@@ -1,6 +1,5 @@
 "use client";
-import { useState } from "react";
-import { Link2, MessageCircle, PlayCircle, Globe, Mail, Check } from "lucide-react";
+import { Link2, MessageCircle, PlayCircle, Globe, Mail } from "lucide-react";
 import Link from "next/link";
 
 const CATEGORY_LINKS = [
@@ -21,20 +20,13 @@ const VENDOR_LINKS = [
 ];
 
 const SUPPORT_EMAIL = "halo@festara.id";
+const GMAIL_COMPOSE_URL = `https://mail.google.com/mail/?view=cm&fs=1&to=${SUPPORT_EMAIL}&su=${encodeURIComponent("Bantuan Festara")}`;
 
 function isHashLink(href: string) {
   return href.includes("#");
 }
 
 export default function Footer() {
-  const [copied, setCopied] = useState(false);
-
-  function copyEmail() {
-    navigator.clipboard.writeText(SUPPORT_EMAIL);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-
   return (
     <footer className="bg-[#16302e] text-white hidden md:block">
       <div className="max-w-7xl mx-auto px-6 py-12">
@@ -106,11 +98,10 @@ export default function Footer() {
             <h4 className="font-bold mb-4 text-sm text-[#DBEBC9]">Bantuan</h4>
             <ul className="space-y-2.5">
               <li>
-                <button onClick={copyEmail}
-                  className="flex items-center gap-1.5 text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors text-left">
-                  {copied ? <Check size={13} className="text-[#1CABB4]" /> : null}
-                  {copied ? "Email disalin!" : "Pusat Bantuan"}
-                </button>
+                <a href={GMAIL_COMPOSE_URL} target="_blank" rel="noopener noreferrer"
+                  className="text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors">
+                  Pusat Bantuan
+                </a>
               </li>
               <li>
                 <a href="/#cara-kerja" className="text-[#8ABDB5] hover:text-[#DBEBC9] text-sm transition-colors">
@@ -138,10 +129,11 @@ export default function Footer() {
           </div>
           <p className="text-[#8ABDB5] text-xs">© 2026 Festara. Platform vendor pernikahan & event terpercaya.</p>
           <div className="flex items-center gap-4">
-            <button onClick={copyEmail} className="flex items-center gap-1.5 text-[#8ABDB5] hover:text-[#DBEBC9] text-xs transition-colors">
-              {copied ? <Check size={12} className="text-[#1CABB4]" /> : <Mail size={12} />}
-              <span>{copied ? "Disalin!" : SUPPORT_EMAIL}</span>
-            </button>
+            <a href={GMAIL_COMPOSE_URL} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-[#8ABDB5] hover:text-[#DBEBC9] text-xs transition-colors">
+              <Mail size={12} />
+              <span>{SUPPORT_EMAIL}</span>
+            </a>
           </div>
         </div>
       </div>
