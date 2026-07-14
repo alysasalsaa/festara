@@ -7,6 +7,7 @@ import { formatPrice, categories } from "@/data";
 import { useAuth } from "@/lib/useAuth";
 import { supabase } from "@/lib/supabase";
 import { getVendorById, SupabaseVendor } from "@/lib/vendors";
+import { notifyAdmin } from "@/lib/notifyAdmin";
 import ChatThread from "@/components/ChatThread";
 
 const STEPS = ["Pilih Paket", "Detail Acara", "Pembayaran", "Konfirmasi"];
@@ -226,7 +227,7 @@ function ChatBookingContent() {
   }
 
   async function handleUploadProof() {
-    if (!proofFile || !user || !transactionId) return;
+    if (!proofFile || !user || !transactionId || !vendor) return;
     setUploading(true);
     setUploadError("");
 
@@ -254,6 +255,11 @@ function ChatBookingContent() {
 
       setTransactionStatus("waiting_verification");
       setProofFile(null);
+
+      notifyAdmin(
+        "Bukti Transfer Baru Menunggu Verifikasi",
+        `Order ID: <b>${orderId}</b><br/>Vendor: ${vendor.name}<br/>Paket: ${pkg?.name || "-"}<br/>Jumlah: ${formatPrice(pkg?.price || 0)}<br/><br/>Silakan cek halaman <a href="https://festara.id/admin/payments">Verifikasi Pembayaran</a> untuk memproses.`
+      );
     } catch (err: any) {
       console.error("Upload proof error:", err);
       setUploadError(err.message || "Gagal mengunggah bukti transfer.");
