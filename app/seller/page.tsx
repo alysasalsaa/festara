@@ -249,20 +249,29 @@ export default function SellerDashboard() {
         }
       });
 
-      setResponseRate(totalInitiated === 0 ? null : Math.round((totalResponded / totalInitiated) * 100));
+      const finalRate = totalInitiated === 0 ? null : Math.round((totalResponded / totalInitiated) * 100);
+      setResponseRate(finalRate);
 
+      let finalAvgMinutes: number | null = null;
       if (responseTimesMs.length > 0) {
-        const avgMinutes = (responseTimesMs.reduce((a, b) => a + b, 0) / responseTimesMs.length) / 60000;
-        if (avgMinutes < 60) setAvgResponseTime(`~${Math.round(avgMinutes)} menit`);
-        else if (avgMinutes < 1440) setAvgResponseTime(`~${Math.round(avgMinutes / 60)} jam`);
-        else setAvgResponseTime(`~${Math.round(avgMinutes / 1440)} hari`);
+        finalAvgMinutes = (responseTimesMs.reduce((a, b) => a + b, 0) / responseTimesMs.length) / 60000;
+        if (finalAvgMinutes < 60) setAvgResponseTime(`~${Math.round(finalAvgMinutes)} menit`);
+        else if (finalAvgMinutes < 1440) setAvgResponseTime(`~${Math.round(finalAvgMinutes / 60)} jam`);
+        else setAvgResponseTime(`~${Math.round(finalAvgMinutes / 1440)} hari`);
       } else {
         setAvgResponseTime(null);
       }
+
+      // Simpan hasil hitungan (bukan chat mentahnya) ke tabel vendors supaya bisa ditampilkan di halaman publik
+      await supabase
+        .from("vendors")
+        .update({ response_rate: finalRate, avg_response_minutes: finalAvgMinutes })
+        .eq("id", vendor!.id);
     }
 
     computeResponseRate();
   }, [vendor]);
+
 
   const handleAddPackage = async () => {
     if (!vendor || !newPkg.name || !newPkg.price) return;

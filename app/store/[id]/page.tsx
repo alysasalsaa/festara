@@ -14,6 +14,12 @@ import LoginPromptModal from "@/components/LoginPromptModal";
 const MONTHS = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 const DAYS = ["Min","Sen","Sel","Rab","Kam","Jum","Sab"];
 
+function formatResponseTime(minutes: number): string {
+  if (minutes < 60) return `${Math.round(minutes)} menit`;
+  if (minutes < 1440) return `${Math.round(minutes / 60)} jam`;
+  return `${Math.round(minutes / 1440)} hari`;
+}
+
 function MiniCalendar({ vendorId, onSelect }: { vendorId: string; onSelect?: (date: string) => void }) {
   const today = new Date();
   const [month, setMonth] = useState(today.getMonth());
@@ -141,6 +147,19 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
   const [portfolio, setPortfolio] = useState<PortfolioImage[]>([]);
   const [reviews, setReviews] = useState<VendorReview[]>([]);
   const [avgRating, setAvgRating] = useState(0);
+  const [responseStats, setResponseStats] = useState<{ response_rate: number | null; avg_response_minutes: number | null }>({ response_rate: null, avg_response_minutes: null });
+
+  useEffect(() => {
+    if (!vendor) return;
+    supabase
+      .from("vendors")
+      .select("response_rate, avg_response_minutes")
+      .eq("id", vendor.id)
+      .single()
+      .then(({ data }) => {
+        if (data) setResponseStats(data);
+      });
+  }, [vendor]);
 
   useEffect(() => {
     async function fetchVendor() {
@@ -291,6 +310,15 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
                     <span>({reviews.length} ulasan)</span>
                   </div>
                 )}
+                {responseStats.response_rate != null && (
+                  <div className="inline-flex items-center gap-1 leading-none">
+                    <MessageCircle size={11} className="flex-shrink-0" />
+                    <span>
+                      {responseStats.response_rate}% respons
+                      {responseStats.avg_response_minutes != null && ` · balas ~${formatResponseTime(responseStats.avg_response_minutes)}`}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -308,6 +336,15 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
                   <Star size={11} fill="#F59E0B" className="text-[#F59E0B]" />
                   <span className="font-semibold text-[#1A3A3C]">{avgRating.toFixed(1)}</span>
                   <span>({reviews.length} ulasan)</span>
+                </div>
+              )}
+              {responseStats.response_rate != null && (
+                <div className="inline-flex items-center gap-1 leading-none">
+                  <MessageCircle size={11} className="flex-shrink-0" />
+                  <span>
+                    {responseStats.response_rate}% respons
+                    {responseStats.avg_response_minutes != null && ` · balas ~${formatResponseTime(responseStats.avg_response_minutes)}`}
+                  </span>
                 </div>
               )}
             </div>
