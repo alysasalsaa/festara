@@ -87,6 +87,53 @@ export default function DashboardPage() {
   const [wishlistLoading, setWishlistLoading] = useState(true);
   const [notificationsList, setNotificationsList] = useState<NotificationRow[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(true);
+  const [profilePhone, setProfilePhone] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [addressText, setAddressText] = useState("");
+  const [editingAddress, setEditingAddress] = useState(false);
+  const [addressDraft, setAddressDraft] = useState("");
+  const [savingAddress, setSavingAddress] = useState(false);
+  const [addressSaved, setAddressSaved] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("users").select("phone, address").eq("id", user.id).single().then(({ data }) => {
+      if (data) {
+        setProfilePhone(data.phone || "");
+        setAddressText(data.address || "");
+      }
+    });
+  }, [user]);
+
+  async function handleSaveProfile() {
+    if (!user) return;
+    setSavingProfile(true);
+    const { error } = await supabase.from("users").update({ phone: profilePhone }).eq("id", user.id);
+    if (!error) {
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 2500);
+    }
+    setSavingProfile(false);
+  }
+
+  function startEditAddress() {
+    setAddressDraft(addressText);
+    setEditingAddress(true);
+  }
+
+  async function handleSaveAddress() {
+    if (!user) return;
+    setSavingAddress(true);
+    const { error } = await supabase.from("users").update({ address: addressDraft }).eq("id", user.id);
+    if (!error) {
+      setAddressText(addressDraft);
+      setEditingAddress(false);
+      setAddressSaved(true);
+      setTimeout(() => setAddressSaved(false), 2500);
+    }
+    setSavingAddress(false);
+  }
 
   async function fetchNotifications(userId: string) {
     const { data, error } = await supabase
@@ -202,7 +249,6 @@ export default function DashboardPage() {
 
   const fullName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Pengguna";
   const email = user?.email || "";
-  const phone = user?.user_metadata?.phone || "";
   const avatarLetter = fullName[0]?.toUpperCase() || "?";
   const joinDate = user?.created_at
     ? new Date(user.created_at).toLocaleDateString("id-ID", { month: "long", year: "numeric" }) : "";
@@ -308,17 +354,25 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="space-y-4">
-                {[
-                  { label: "Nama Lengkap", value: fullName },
-                  { label: "Email", value: email },
-                  { label: "Nomor HP", value: phone },
-                ].map(field => (
-                  <div key={field.label}>
-                    <label className="text-xs font-medium text-[#8ABDB5] block mb-1">{field.label}</label>
-                    <input defaultValue={field.value} className="w-full bg-[#F0FBF5] border border-[#D4EAC8] rounded-xl px-4 py-3 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4]" />
-                  </div>
-                ))}
-                <button className="w-full bg-[#1CABB4] hover:bg-[#178E96] text-white font-bold py-3.5 rounded-2xl transition-colors mt-2">Simpan Perubahan</button>
+                <div>
+                  <label className="text-xs font-medium text-[#8ABDB5] block mb-1">Nama Lengkap</label>
+                  <input defaultValue={fullName} disabled className="w-full bg-[#F3F4F6] border border-[#D4EAC8] rounded-xl px-4 py-3 text-sm text-[#8ABDB5]" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-[#8ABDB5] block mb-1">Email</label>
+                  <input defaultValue={email} disabled className="w-full bg-[#F3F4F6] border border-[#D4EAC8] rounded-xl px-4 py-3 text-sm text-[#8ABDB5]" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-[#8ABDB5] block mb-1">Nomor HP</label>
+                  <input value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)}
+                    placeholder="08xxxxxxxxxx"
+                    className="w-full bg-[#F0FBF5] border border-[#D4EAC8] rounded-xl px-4 py-3 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4]" />
+                </div>
+                {profileSaved && <p className="text-xs text-[#15803D] text-center">Perubahan tersimpan!</p>}
+                <button onClick={handleSaveProfile} disabled={savingProfile}
+                  className="w-full bg-[#1CABB4] hover:bg-[#178E96] text-white font-bold py-3.5 rounded-2xl transition-colors mt-2 disabled:opacity-60">
+                  {savingProfile ? "Menyimpan..." : "Simpan Perubahan"}
+                </button>
               </div>
             </div>
           )}
@@ -483,27 +537,44 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* ALAMAT */}
+          {/* ALAMAT — data asli dari Supabase (public.users.address) */}
           {tab === "addresses" && (
             <div className="bg-white rounded-3xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-6">
-              <h2 className="font-bold text-[#1A3A3C] mb-5">Daftar Alamat</h2>
-              <div className="space-y-3">
-                <div className="p-4 rounded-2xl border-2 border-[#1CABB4] bg-[#E8F8F9]">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex gap-2">
-                      <span className="text-xs font-bold bg-white px-2 py-0.5 rounded-full border border-[#D4EAC8]">Utama</span>
-                      <span className="text-xs font-bold bg-[#1CABB4] text-white px-2 py-0.5 rounded-full">Aktif</span>
-                    </div>
-                    <button className="text-xs text-[#1CABB4] font-semibold">Edit</button>
+              <h2 className="font-bold text-[#1A3A3C] mb-5">Alamat</h2>
+              <div className="p-4 rounded-2xl border-2 border-[#1CABB4] bg-[#E8F8F9]">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex gap-2">
+                    <span className="text-xs font-bold bg-white px-2 py-0.5 rounded-full border border-[#D4EAC8]">Utama</span>
+                    <span className="text-xs font-bold bg-[#1CABB4] text-white px-2 py-0.5 rounded-full">Aktif</span>
                   </div>
-                  <p className="text-sm font-semibold text-[#1A3A3C]">{fullName}</p>
-                  <p className="text-xs text-[#8ABDB5]">{phone || "-"}</p>
-                  <p className="text-xs text-[#4A7A6D] mt-1">Belum diisi</p>
+                  {!editingAddress && (
+                    <button onClick={startEditAddress} className="text-xs text-[#1CABB4] font-semibold">Edit</button>
+                  )}
                 </div>
-                <button className="w-full py-4 border-2 border-dashed border-[#D4EAC8] rounded-2xl text-sm text-[#8ABDB5] hover:border-[#1CABB4] hover:text-[#1CABB4] transition-colors">
-                  + Tambah Alamat Baru
-                </button>
+                <p className="text-sm font-semibold text-[#1A3A3C]">{fullName}</p>
+                <p className="text-xs text-[#8ABDB5] mb-2">{profilePhone || "Nomor HP belum diisi"}</p>
+
+                {editingAddress ? (
+                  <div className="space-y-2 mt-2">
+                    <textarea value={addressDraft} onChange={(e) => setAddressDraft(e.target.value)} rows={3}
+                      placeholder="Jalan, nomor rumah, kelurahan, kecamatan, kota..."
+                      className="w-full bg-white border border-[#D4EAC8] rounded-xl px-3 py-2 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] resize-none" />
+                    <div className="flex gap-2">
+                      <button onClick={handleSaveAddress} disabled={savingAddress}
+                        className="flex-1 bg-[#1CABB4] text-white text-sm font-bold py-2.5 rounded-xl hover:bg-[#178E96] transition-colors disabled:opacity-60">
+                        {savingAddress ? "Menyimpan..." : "Simpan"}
+                      </button>
+                      <button onClick={() => setEditingAddress(false)}
+                        className="flex-1 border border-[#D4EAC8] bg-white text-[#4A7A6D] text-sm font-bold py-2.5 rounded-xl hover:bg-[#F0FBF5] transition-colors">
+                        Batal
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#4A7A6D] mt-1">{addressText || "Alamat belum diisi"}</p>
+                )}
               </div>
+              {addressSaved && <p className="text-xs text-[#15803D] mt-3 text-center">Alamat tersimpan!</p>}
             </div>
           )}
 
