@@ -162,7 +162,7 @@ export default function HomePage() {
       Lihat Semua <ArrowRight size={14} />
     </Link>
   </div>
-  <div className="grid grid-cols-3 md:grid-cols-7 gap-3 auto-rows-fr">
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 auto-rows-fr">
     {categories.map((cat, i) => (
       <motion.div key={cat.id}
         initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.06 }}
