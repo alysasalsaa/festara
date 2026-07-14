@@ -80,7 +80,7 @@ export default function ChatThread({
   }, [currentUserId, otherUserId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages]);
 
   const send = async () => {
