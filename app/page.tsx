@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Star, ArrowRight, Shield, Clock, Award, X, Store } from "lucide-react";
+import { Star, ArrowRight, Shield, Clock, Award, X, Store, GraduationCap } from "lucide-react";
 import { motion } from "framer-motion";
 import HeroBanner from "@/components/HeroBanner";
 import AnimatedSection from "@/components/AnimatedSection";
@@ -174,6 +174,26 @@ export default function HomePage() {
       <AnimatedSection className="max-w-7xl mx-auto px-4 md:px-6">
         <StatsSection />
       </AnimatedSection>
+
+      {/* Badge Inkubator Bisnis UNY */}
+      <AnimatedSection className="max-w-7xl mx-auto px-4 md:px-6">
+        <div className="bg-gradient-to-r from-[#0D545A] to-[#1CABB4] rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-5 text-center md:text-left">
+          <div className="w-16 h-16 bg-white/15 rounded-2xl flex items-center justify-center flex-shrink-0">
+            <GraduationCap size={32} className="text-white" />
+          </div>
+          <div>
+            <p className="text-white/70 text-xs font-bold uppercase tracking-wide mb-1">Tenant Binaan Resmi</p>
+            <h3 className="text-white font-extrabold text-lg md:text-xl mb-1" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
+              Inkubator Bisnis Universitas Negeri Yogyakarta
+            </h3>
+            <p className="text-white/80 text-sm">
+              Festara merupakan startup binaan resmi Inkubator Bisnis UNY, didampingi dalam pengembangan produk dan strategi bisnis.
+            </p>
+          </div>
+        </div>
+      </AnimatedSection>
+
+      {/* Kategori */}
 
       {/* Kategori */}
 <AnimatedSection className="max-w-7xl mx-auto px-4 md:px-6">
