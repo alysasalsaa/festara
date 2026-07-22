@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/useAuth";
 import { supabase } from "@/lib/supabase";
 import { getVendorById, SupabaseVendor } from "@/lib/vendors";
 import { notifyAdmin } from "@/lib/notifyAdmin";
+import { notifyVendor } from "@/lib/notifyVendor";
 import ChatThread from "@/components/ChatThread";
 
 const STEPS = ["Pilih Paket", "Detail Acara", "Pembayaran", "Konfirmasi"];
@@ -173,6 +174,21 @@ function ChatBookingContent() {
 
         setTransactionId(trx.id);
         setTransactionStatus(trx.status as TransactionStatus);
+
+        // Kirim notifikasi email ke vendor kalau ada booking baru
+        const { data: vendorUser } = await supabase
+          .from("users")
+          .select("email")
+          .eq("id", vendor.user_id)
+          .single();
+
+        if (vendorUser?.email) {
+          notifyVendor(
+            vendorUser.email,
+            "Booking Baru Masuk!",
+            `Halo ${vendor.name},<br/><br/>Ada booking baru dari <b>${guestName}</b>:<br/>Paket: ${pkg.name}<br/>Tanggal: ${new Date(eventDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}<br/>Jam: ${eventTime}<br/>Lokasi: ${eventLocation}<br/><br/>Silakan buka <a href="https://festara.id/seller">Dashboard Vendor</a> untuk lihat detail & chat dengan pelanggan.`
+          );
+        }
       } catch (err: any) {
         console.error("Booking/transaction error:", err);
         setPayError(err.message || "Terjadi kesalahan saat membuat pesanan.");
