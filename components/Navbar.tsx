@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Search, Heart, Bell, User, Store, Menu, X, Calendar, ChevronDown, Building2 } from "lucide-react";
@@ -38,6 +38,17 @@ export default function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0);
   const pathname = usePathname();
   const { user } = useAuth();
+  const catRef = useRef<HTMLDivElement>(null);
+  const sewaRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (catRef.current && !catRef.current.contains(e.target as Node)) setCatOpen(false);
+      if (sewaRef.current && !sewaRef.current.contains(e.target as Node)) setSewaOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -97,10 +108,9 @@ export default function Navbar() {
         <nav className="hidden md:flex items-center gap-0 flex-1">
           {NAV_LINKS.map(link =>
             link.label === "Kategori" ? (
-              <div key={link.href} className="relative">
+              <div key={link.href} className="relative" ref={catRef}>
                 <button
                   onClick={() => setCatOpen(!catOpen)}
-                  onBlur={() => setTimeout(() => setCatOpen(false), 150)}
                   className={`flex items-center gap-1 px-2 py-2 rounded-xl text-xs font-medium transition-colors
                     ${pathname === link.href ? "text-[#1CABB4] bg-[#E8F8F9]" : "text-[#4A7A6D] hover:text-[#1CABB4] hover:bg-[#E8F8F9]"}`}>
                   {link.label}
@@ -244,7 +254,7 @@ export default function Navbar() {
         </div>
       </div>
 
-{/* Category bar — desktop only */}
+      {/* Category bar — desktop only */}
       <div className="hidden md:block border-t border-[#EAF5E4]">
         <div className="max-w-7xl mx-auto px-6 flex items-center gap-1 py-1.5">
           <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide flex-1 min-w-0">
@@ -256,10 +266,9 @@ export default function Navbar() {
               </Link>
             ))}
           </div>
-          <div className="relative flex-shrink-0">
+          <div className="relative flex-shrink-0" ref={sewaRef}>
             <button
               onClick={() => setSewaOpen(!sewaOpen)}
-              onBlur={() => setTimeout(() => setSewaOpen(false), 150)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#4A7A6D] hover:text-[#1CABB4] hover:bg-[#E8F8F9] rounded-xl transition-all whitespace-nowrap">
               <Building2 size={14} />
               <span>Sewa</span>
