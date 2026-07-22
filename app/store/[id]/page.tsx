@@ -2,7 +2,7 @@
 import { useState, use, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Star, MapPin, BadgeCheck, MessageCircle, Heart, Share2, ChevronLeft, ChevronRight, Check, Camera } from "lucide-react";
+import { Star, MapPin, BadgeCheck, MessageCircle, Heart, Share2, ChevronLeft, ChevronRight, Check, Camera, Calendar } from "lucide-react";
 import { formatPrice, categories } from "@/data";
 import { useAuth } from "@/lib/useAuth";
 import { useWishlist } from "@/lib/useWishlist";
@@ -147,13 +147,13 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
   const [portfolio, setPortfolio] = useState<PortfolioImage[]>([]);
   const [reviews, setReviews] = useState<VendorReview[]>([]);
   const [avgRating, setAvgRating] = useState(0);
-  const [responseStats, setResponseStats] = useState<{ response_rate: number | null; avg_response_minutes: number | null }>({ response_rate: null, avg_response_minutes: null });
+  const [responseStats, setResponseStats] = useState<{ response_rate: number | null; avg_response_minutes: number | null; completed_bookings_count: number }>({ response_rate: null, avg_response_minutes: null, completed_bookings_count: 0 });
 
   useEffect(() => {
     if (!vendor) return;
     supabase
       .from("vendors")
-      .select("response_rate, avg_response_minutes")
+      .select("response_rate, avg_response_minutes, completed_bookings_count")
       .eq("id", vendor.id)
       .single()
       .then(({ data }) => {
@@ -319,6 +319,12 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
                     </span>
                   </div>
                 )}
+                {responseStats.completed_bookings_count > 0 && (
+                  <div className="inline-flex items-center gap-1 leading-none">
+                    <Calendar size={11} className="flex-shrink-0" />
+                    <span>Sudah dibooking {responseStats.completed_bookings_count}x</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -345,6 +351,12 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
                     {responseStats.response_rate}% respons
                     {responseStats.avg_response_minutes != null && ` · balas ~${formatResponseTime(responseStats.avg_response_minutes)}`}
                   </span>
+                </div>
+              )}
+              {responseStats.completed_bookings_count > 0 && (
+                <div className="inline-flex items-center gap-1 leading-none">
+                  <Calendar size={11} className="flex-shrink-0" />
+                  <span>Sudah dibooking {responseStats.completed_bookings_count}x</span>
                 </div>
               )}
             </div>

@@ -121,6 +121,9 @@ export default function SellerDashboard() {
       setOrders(ordersData);
       setRevenue(revenueData);
 
+      // Hitung & simpan jumlah booking terkonfirmasi/selesai, supaya bisa ditampilkan di halaman publik
+      const completedCount = ordersData.filter(o => o.status === "confirmed" || o.status === "completed").length;
+      await supabase.from("vendors").update({ completed_bookings_count: completedCount }).eq("id", vendor!.id);
       const { data: reviews } = await supabase
         .from("reviews")
         .select("rating")
