@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Heart, Bell, User, Store, Menu, X, Calendar, ChevronDown } from "lucide-react";
+import { Search, Heart, Bell, User, Store, Menu, X, Calendar, ChevronDown, Building2 } from "lucide-react";
 import { categories } from "@/data";
 import CategoryIcon from "@/components/CategoryIcon";
 import { useAuth } from "@/lib/useAuth";
@@ -33,6 +33,7 @@ const FestaraLogo = () => (
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
+  const [sewaOpen, setSewaOpen] = useState(false);
   const [searchVal, setSearchVal] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
   const pathname = usePathname();
@@ -107,13 +108,26 @@ export default function Navbar() {
                 </button>
                 {catOpen && (
                   <div className="absolute top-full left-0 mt-2 bg-white rounded-2xl shadow-[0_8px_32px_rgba(28,171,180,0.15)] border border-[#D4EAC8] z-50 overflow-hidden w-52">
-                    {categories.map(cat => (
+                    {categories.filter(cat => !cat.parent).map(cat => (
                       <Link key={cat.id} href={`/search?cat=${cat.id}`}
                         onClick={() => setCatOpen(false)}
                         className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#F0FBF5] transition-colors text-sm text-[#1A3A3C] hover:text-[#1CABB4]">
                         <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
                           style={{ background: cat.color + "18" }}>
                           <CategoryIcon id={cat.id} color={cat.color} size={16} />
+                        </div>
+                        <span>{cat.name}</span>
+                      </Link>
+                    ))}
+                    <div className="border-t border-[#EAF5E4] my-1" />
+                    <p className="px-4 pt-2 pb-1 text-[10px] font-bold text-[#8ABDB5] uppercase tracking-wide">Sewa</p>
+                    {categories.filter(cat => cat.parent === "sewa").map(cat => (
+                      <Link key={cat.id} href={`/search?cat=${cat.id}`}
+                        onClick={() => setCatOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#F0FBF5] transition-colors text-sm text-[#1A3A3C] hover:text-[#1CABB4]">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{ background: cat.color + "18" }}>
+                          <Building2 size={15} style={{ color: cat.color }} />
                         </div>
                         <span>{cat.name}</span>
                       </Link>
@@ -233,13 +247,35 @@ export default function Navbar() {
       {/* Category bar — desktop only */}
       <div className="hidden md:block border-t border-[#EAF5E4]">
         <div className="max-w-7xl mx-auto px-6 flex items-center gap-1 py-1.5 overflow-x-auto scrollbar-hide">
-          {categories.map(cat => (
+          {categories.filter(cat => !cat.parent).map(cat => (
             <Link key={cat.id} href={`/search?cat=${cat.id}`}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#4A7A6D] hover:text-[#1CABB4] hover:bg-[#E8F8F9] rounded-xl transition-all whitespace-nowrap">
               <CategoryIcon id={cat.id} color={cat.color} size={14} />
               <span>{cat.name}</span>
             </Link>
           ))}
+          <div className="relative flex-shrink-0">
+            <button
+              onClick={() => setSewaOpen(!sewaOpen)}
+              onBlur={() => setTimeout(() => setSewaOpen(false), 150)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#4A7A6D] hover:text-[#1CABB4] hover:bg-[#E8F8F9] rounded-xl transition-all whitespace-nowrap">
+              <Building2 size={14} />
+              <span>Sewa</span>
+              <ChevronDown size={11} className={`transition-transform duration-200 ${sewaOpen ? "rotate-180" : ""}`} />
+            </button>
+            {sewaOpen && (
+              <div className="absolute top-full left-0 mt-2 bg-white rounded-2xl shadow-[0_8px_32px_rgba(28,171,180,0.15)] border border-[#D4EAC8] z-50 overflow-hidden w-44">
+                {categories.filter(cat => cat.parent === "sewa").map(cat => (
+                  <Link key={cat.id} href={`/search?cat=${cat.id}`}
+                    onClick={() => setSewaOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#F0FBF5] transition-colors text-sm text-[#1A3A3C] hover:text-[#1CABB4]">
+                    <Building2 size={15} style={{ color: cat.color }} />
+                    <span>{cat.name}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
