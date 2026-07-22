@@ -734,23 +734,50 @@ export default function SellerDashboard() {
                   const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                   const avail = availability.find(a => a.date === dateStr);
                   const isManuallyBlocked = avail?.is_available === false;
-                  const hasBooking = orders.some(o => o.event_date === dateStr && o.status !== "cancelled");
+                  const booking = orders.find(o => o.event_date === dateStr && o.status !== "cancelled");
+                  const hasBooking = !!booking;
                   const isUnavailable = hasBooking || isManuallyBlocked;
 
                   return (
-                    <button key={day} onClick={() => !hasBooking && handleToggleDate(dateStr, !isManuallyBlocked)}
-                      disabled={hasBooking}
-                      className={`aspect-square flex flex-col items-center justify-center rounded-xl text-xs font-semibold transition-colors border
-                        ${isUnavailable
-                          ? `bg-[#FEE2E2] text-[#EF4444] border-[#FCA5A5] ${hasBooking ? "cursor-not-allowed" : "hover:bg-[#FECACA]"}`
-                          : "bg-white text-[#1A3A3C] border-[#D4EAC8] hover:border-[#1CABB4] hover:bg-[#F0FBF5]"}`}>
-                      {day}
-                    </button>
+                    <div key={day} className="relative">
+                      <button
+                        onClick={() => {
+                          if (booking) startEditTime(booking);
+                          else handleToggleDate(dateStr, !isManuallyBlocked);
+                        }}
+                        className={`w-full aspect-square flex flex-col items-center justify-center rounded-xl text-xs font-semibold transition-colors border
+                          ${isUnavailable
+                            ? "bg-[#FEE2E2] text-[#EF4444] border-[#FCA5A5] hover:bg-[#FECACA]"
+                            : "bg-white text-[#1A3A3C] border-[#D4EAC8] hover:border-[#1CABB4] hover:bg-[#F0FBF5]"}`}>
+                        <span>{day}</span>
+                        {booking && (
+                          <span className="text-[8px] font-normal leading-none mt-0.5">
+                            {booking.event_time || "atur jam"}
+                          </span>
+                        )}
+                      </button>
+                      {booking && editingTimeId === booking.id && (
+                        <div className="absolute z-20 top-full left-1/2 -translate-x-1/2 mt-1 bg-white border border-[#D4EAC8] rounded-xl shadow-lg p-2 flex flex-col gap-1.5 w-32">
+                          <input type="time" value={timeDraft} onChange={e => setTimeDraft(e.target.value)}
+                            className="border border-[#D4EAC8] rounded-lg px-1.5 py-1 text-xs text-[#1A3A3C] outline-none focus:border-[#1CABB4] w-full" />
+                          <div className="flex gap-1">
+                            <button onClick={() => handleSaveTime(booking.id)} disabled={savingTime}
+                              className="flex-1 text-[10px] font-bold text-white bg-[#1CABB4] px-1.5 py-1 rounded-lg hover:bg-[#178E96] disabled:opacity-60">
+                              Simpan
+                            </button>
+                            <button onClick={() => setEditingTimeId(null)}
+                              className="flex-1 text-[10px] font-semibold text-[#8ABDB5] px-1.5 py-1 border border-[#D4EAC8] rounded-lg">
+                              Batal
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
               <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[#EAF5E4]">
-                <div className="flex items-center gap-2 text-xs"><div className="w-3 h-3 rounded bg-[#FEE2E2] border border-[#FCA5A5]" /><span className="text-[#4A7A6D]">Sudah dibooking / tidak tersedia</span></div>
+                <div className="flex items-center gap-2 text-xs"><div className="w-3 h-3 rounded bg-[#FEE2E2] border border-[#FCA5A5]" /><span className="text-[#4A7A6D]">Sudah dibooking / tidak tersedia (klik buat atur jam)</span></div>
                 <div className="flex items-center gap-2 text-xs"><div className="w-3 h-3 rounded bg-white border border-[#D4EAC8]" /><span className="text-[#4A7A6D]">Tersedia</span></div>
               </div>
             </div>
