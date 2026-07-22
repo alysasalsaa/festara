@@ -244,16 +244,18 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Category bar — desktop only */}
+{/* Category bar — desktop only */}
       <div className="hidden md:block border-t border-[#EAF5E4]">
-        <div className="max-w-7xl mx-auto px-6 flex items-center gap-1 py-1.5 overflow-x-auto scrollbar-hide">
-          {categories.filter(cat => !cat.parent).map(cat => (
-            <Link key={cat.id} href={`/search?cat=${cat.id}`}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#4A7A6D] hover:text-[#1CABB4] hover:bg-[#E8F8F9] rounded-xl transition-all whitespace-nowrap">
-              <CategoryIcon id={cat.id} color={cat.color} size={14} />
-              <span>{cat.name}</span>
-            </Link>
-          ))}
+        <div className="max-w-7xl mx-auto px-6 flex items-center gap-1 py-1.5">
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide flex-1 min-w-0">
+            {categories.filter(cat => !cat.parent).map(cat => (
+              <Link key={cat.id} href={`/search?cat=${cat.id}`}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#4A7A6D] hover:text-[#1CABB4] hover:bg-[#E8F8F9] rounded-xl transition-all whitespace-nowrap">
+                <CategoryIcon id={cat.id} color={cat.color} size={14} />
+                <span>{cat.name}</span>
+              </Link>
+            ))}
+          </div>
           <div className="relative flex-shrink-0">
             <button
               onClick={() => setSewaOpen(!sewaOpen)}
@@ -264,7 +266,7 @@ export default function Navbar() {
               <ChevronDown size={11} className={`transition-transform duration-200 ${sewaOpen ? "rotate-180" : ""}`} />
             </button>
             {sewaOpen && (
-              <div className="absolute top-full left-0 mt-2 bg-white rounded-2xl shadow-[0_8px_32px_rgba(28,171,180,0.15)] border border-[#D4EAC8] z-50 overflow-hidden w-44">
+              <div className="absolute top-full right-0 mt-2 bg-white rounded-2xl shadow-[0_8px_32px_rgba(28,171,180,0.15)] border border-[#D4EAC8] z-50 overflow-hidden w-44">
                 {categories.filter(cat => cat.parent === "sewa").map(cat => (
                   <Link key={cat.id} href={`/search?cat=${cat.id}`}
                     onClick={() => setSewaOpen(false)}
