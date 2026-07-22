@@ -27,13 +27,7 @@ function needsPlainAnchor(href: string) {
 }
 
 const FestaraLogo = () => (
-  <svg width="26" height="32" viewBox="0 0 28 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M14 1L27 12H1L14 1Z" fill="#178E96"/>
-    <path d="M1 12L14 33L27 12H1Z" fill="#1CABB4"/>
-    <path d="M14 1L1 12L7 12L14 5L14 1Z" fill="#1CABB4"/>
-    <path d="M14 1L27 12L21 12L14 5Z" fill="#178E96" opacity="0.6"/>
-    <path d="M6 15H22" stroke="#DBEBC9" strokeWidth="3" strokeLinecap="round"/>
-  </svg>
+  <img src="/logo/festara-icon-color.png" alt="Festara" className="h-8 w-8 object-contain" />
 );
 
 export default function Navbar() {

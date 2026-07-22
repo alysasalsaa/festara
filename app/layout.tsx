@@ -8,8 +8,8 @@ export const metadata: Metadata = {
   title: "Festara — Platform Vendor Pernikahan & Event",
   description: "Temukan vendor terbaik untuk acara spesialmu. Booking langsung, pembayaran aman.",
   icons: {
-    icon: "https://txcylovpryvaczbnawqq.supabase.co/storage/v1/object/public/portfolio/festara-icon-color.png",
-    apple: "https://txcylovpryvaczbnawqq.supabase.co/storage/v1/object/public/portfolio/festara-icon-color.png",
+    icon: "/logo/festara-icon-color.png",
+    apple: "/logo/festara-icon-color.png",
   },
 };
 
