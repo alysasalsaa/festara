@@ -37,6 +37,7 @@ function ChatBookingContent() {
   const [activeStep, setActiveStep] = useState(0);
   const [selectedPkg, setSelectedPkg] = useState<number | null>(null);
   const [eventDate, setEventDate] = useState(searchParams.get("date") || "2026-11-12");
+  const [eventTime, setEventTime] = useState("10:00");
   const [eventLocation, setEventLocation] = useState("");
   const [guestName, setGuestName] = useState("");
   const [notes, setNotes] = useState("");
@@ -116,7 +117,7 @@ function ChatBookingContent() {
   }, [vendorId]);
 
   const pkg = selectedPkg !== null ? packages[selectedPkg] : null;
-  const step1Valid = guestName.trim() !== "" && eventDate !== "" && eventLocation.trim() !== "";
+  const step1Valid = guestName.trim() !== "" && eventDate !== "" && eventTime !== "" && eventLocation.trim() !== "";
 
   // Buat booking + catatan transaksi (transfer manual) begitu masuk step Pembayaran
   useEffect(() => {
@@ -134,6 +135,7 @@ function ChatBookingContent() {
             vendor_id: vendor.id,
             package_id: pkg.id,
             event_date: eventDate,
+            event_time: eventTime,
             event_location: eventLocation,
             guest_name: guestName,
             notes,
@@ -180,7 +182,7 @@ function ChatBookingContent() {
     }
 
     createBookingAndTransaction();
-  }, [activeStep, pkg, bookingId, user, vendor, eventDate, eventLocation, guestName, notes]);
+  }, [activeStep, pkg, bookingId, user, vendor, eventDate, eventTime, eventLocation, guestName, notes]);
 
   // Dengarkan realtime perubahan status transaksi (misal: admin memverifikasi/menolak bukti transfer)
   useEffect(() => {
@@ -410,6 +412,11 @@ function ChatBookingContent() {
                     className={`w-full border rounded-xl px-3 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] bg-[#F0FBF5] ${detailTouched && !eventDate ? "border-[#EF4444]" : "border-[#D4EAC8]"}`} />
                 </div>
                 <div>
+                  <p className="text-xs text-[#4A7A6D] mb-1.5">Jam Acara <span className="text-[#EF4444]">*</span></p>
+                  <input type="time" value={eventTime} onChange={e => setEventTime(e.target.value)}
+                    className={`w-full border rounded-xl px-3 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] bg-[#F0FBF5] ${detailTouched && !eventTime ? "border-[#EF4444]" : "border-[#D4EAC8]"}`} />
+                </div>
+                <div>
                   <p className="text-xs text-[#4A7A6D] mb-1.5">Lokasi Acara <span className="text-[#EF4444]">*</span></p>
                   <input value={eventLocation} onChange={e => setEventLocation(e.target.value)}
                     placeholder="Contoh: Kaliurang, Yogyakarta"
@@ -441,6 +448,7 @@ function ChatBookingContent() {
                   { label: "Paket", value: pkg.name },
                   { label: "Atas Nama", value: guestName },
                   { label: "Tanggal Acara", value: new Date(eventDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) },
+                  { label: "Jam Acara", value: eventTime },
                   { label: "Lokasi", value: eventLocation },
                   { label: "Total Pembayaran", value: formatPrice(pkg.price), bold: true },
                 ].map(item => (
