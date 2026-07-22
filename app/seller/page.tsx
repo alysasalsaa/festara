@@ -18,7 +18,7 @@ import {
   getMyVendor, updateMyVendor, VendorProfile,
   getVendorPackages, createPackage, deletePackage, togglePackageActive, VendorPackage,
   getPortfolioImages, uploadPortfolioImage, deletePortfolioImage, PortfolioImage,
-  getVendorOrders, VendorOrder,
+  getVendorOrders, VendorOrder, updateBookingTime,
   getVendorAvailability, toggleAvailability,
   getVendorRevenue,
 } from "@/lib/sellerVendor";
@@ -72,6 +72,9 @@ export default function SellerDashboard() {
   const [reviewCount, setReviewCount] = useState(0);
   const [responseRate, setResponseRate] = useState<number | null>(null);
   const [avgResponseTime, setAvgResponseTime] = useState<string | null>(null);
+  const [editingTimeId, setEditingTimeId] = useState<string | null>(null);
+  const [timeDraft, setTimeDraft] = useState("");
+  const [savingTime, setSavingTime] = useState(false);
 
   const [packages, setPackages] = useState<VendorPackage[]>([]);
   const [portfolio, setPortfolio] = useState<PortfolioImage[]>([]);
@@ -272,7 +275,6 @@ export default function SellerDashboard() {
     computeResponseRate();
   }, [vendor]);
 
-
   const handleAddPackage = async () => {
     if (!vendor || !newPkg.name || !newPkg.price) return;
     setSavingPkg(true);
@@ -299,6 +301,21 @@ export default function SellerDashboard() {
     const ok = await togglePackageActive(id, !current);
     if (ok) setPackages(prev => prev.map(p => p.id === id ? { ...p, is_active: !current } : p));
   };
+
+  function startEditTime(order: VendorOrder) {
+    setTimeDraft(order.event_time || "10:00");
+    setEditingTimeId(order.id);
+  }
+
+  async function handleSaveTime(orderId: string) {
+    setSavingTime(true);
+    const ok = await updateBookingTime(orderId, timeDraft);
+    if (ok) {
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, event_time: timeDraft } : o));
+      setEditingTimeId(null);
+    }
+    setSavingTime(false);
+  }
 
   const handleUploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -609,9 +626,29 @@ export default function SellerDashboard() {
                           </span>
                         </div>
                         <p className="text-sm font-semibold text-[#1A3A3C]">{order.package_name || "Paket"}</p>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-[#4A7A6D]">
+                        <div className="flex items-center gap-3 mt-1 text-xs text-[#4A7A6D] flex-wrap">
                           <span className="flex items-center gap-1"><Users size={10} />{order.guest_name}</span>
                           <span className="flex items-center gap-1"><Clock size={10} />{new Date(order.event_date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
+                          {editingTimeId === order.id ? (
+                            <span className="flex items-center gap-1.5">
+                              <input type="time" value={timeDraft} onChange={e => setTimeDraft(e.target.value)}
+                                className="border border-[#D4EAC8] rounded-lg px-1.5 py-0.5 text-xs text-[#1A3A3C] outline-none focus:border-[#1CABB4]" />
+                              <button onClick={() => handleSaveTime(order.id)} disabled={savingTime}
+                                className="text-[10px] font-bold text-white bg-[#1CABB4] px-2 py-0.5 rounded-lg hover:bg-[#178E96] disabled:opacity-60">
+                                Simpan
+                              </button>
+                              <button onClick={() => setEditingTimeId(null)}
+                                className="text-[10px] font-semibold text-[#8ABDB5] px-1">
+                                Batal
+                              </button>
+                            </span>
+                          ) : (
+                            <button onClick={() => startEditTime(order)}
+                              className="flex items-center gap-1 text-[#1CABB4] hover:underline">
+                              {order.event_time ? `Jam ${order.event_time}` : "Atur jam"}
+                              <Edit size={10} />
+                            </button>
+                          )}
                         </div>
                       </div>
                       <p className="font-extrabold text-[#1CABB4] flex-shrink-0">{formatPrice(order.total_price)}</p>

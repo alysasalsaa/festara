@@ -34,6 +34,7 @@ export type VendorOrder = {
   id: string;
   guest_name: string;
   event_date: string;
+  event_time: string | null;
   event_location: string | null;
   status: string;
   total_price: number;
@@ -181,7 +182,7 @@ export async function deletePortfolioImage(imageId: string, imageUrl: string, us
 export async function getVendorOrders(vendorId: string): Promise<VendorOrder[]> {
   const { data, error } = await supabase
     .from("bookings")
-    .select("id, guest_name, event_date, event_location, status, total_price, created_at, package_id")
+    .select("id, guest_name, event_date, event_time, event_location, status, total_price, created_at, package_id")
     .eq("vendor_id", vendorId)
     .order("created_at", { ascending: false });
 
@@ -201,6 +202,20 @@ export async function getVendorOrders(vendorId: string): Promise<VendorOrder[]> 
     ...b,
     package_name: b.package_id ? packageMap[b.package_id] : undefined,
   }));
+}
+
+// Vendor mengatur/mengubah jam acara booking miliknya
+export async function updateBookingTime(bookingId: string, eventTime: string) {
+  const { error } = await supabase
+    .from("bookings")
+    .update({ event_time: eventTime })
+    .eq("id", bookingId);
+
+  if (error) {
+    console.error("Gagal update jam booking:", error);
+    return false;
+  }
+  return true;
 }
 
 // ── AVAILABILITY ──
