@@ -83,7 +83,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-white shadow-[0_2px_12px_rgba(28,171,180,0.10)]">
       {/* Top announcement bar */}
       <div className="bg-[#1CABB4] text-white text-xs py-1.5 text-center px-4">
-        Temukan vendor terbaik untuk acara spesialmu — Booking langsung, pembayaran aman!
+        Temukan vendor terbaik untuk acara spesialmu. Booking langsung, pembayaran aman!
       </div>
 
       {/* Main navbar */}
