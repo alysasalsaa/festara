@@ -141,6 +141,7 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
   const [tab, setTab] = useState("Profil");
   const [selectedPkg, setSelectedPkg] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedTime, setSelectedTime] = useState("10:00");
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   const [packages, setPackages] = useState<{ id: string; name: string; description: string | null; price: number; is_popular: boolean }[]>([]);
@@ -257,13 +258,13 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
 
   const goToChat = () => {
     if (!user) { setShowLoginModal(true); return; }
-    const dateQuery = selectedDate ? `&date=${selectedDate}` : "";
+    const dateQuery = selectedDate ? `&date=${selectedDate}&time=${selectedTime}` : "";
     router.push(`/chat?vendor=${vendor.id}${dateQuery}`);
   };
   const handleDateSelect = (date: string) => {
   setSelectedDate(date);
   if (!user) { setTimeout(() => setShowLoginModal(true), 300); return; }
-  setTimeout(() => router.push(`/chat?vendor=${vendor.id}&date=${date}`), 500);
+  setTimeout(() => router.push(`/chat?vendor=${vendor.id}&date=${date}&time=${selectedTime}`), 500);
 };
 
   return (
@@ -396,6 +397,11 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
             <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5">
               <h2 className="font-bold text-[#1A3A3C] mb-1">Pilih Tanggal Acara</h2>
               <p className="text-xs text-[#8ABDB5] mb-3">Klik tanggal → langsung ke booking</p>
+              <div className="mb-3">
+                <label className="text-xs font-semibold text-[#4A7A6D] block mb-1.5">Jam Acara</label>
+                <input type="time" value={selectedTime} onChange={e => setSelectedTime(e.target.value)}
+                  className="w-full border border-[#D4EAC8] rounded-xl px-3 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] bg-[#F0FBF5]" />
+              </div>
               <MiniCalendar vendorId={vendor.id} onSelect={handleDateSelect} />
               {selectedDate && <p className="text-xs text-center text-[#1CABB4] font-semibold mt-2 animate-pulse">{user ? "Mengarahkan ke booking..." : "Silakan login dulu..."}</p>}
             </div>
@@ -438,6 +444,11 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
           <div>
             <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5">
               <h2 className="font-bold text-[#1A3A3C] mb-1">Pilih Tanggal Acara</h2>
+              <div className="mb-3 mt-2">
+                <label className="text-xs font-semibold text-[#4A7A6D] block mb-1.5">Jam Acara</label>
+                <input type="time" value={selectedTime} onChange={e => setSelectedTime(e.target.value)}
+                  className="w-full border border-[#D4EAC8] rounded-xl px-3 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] bg-[#F0FBF5]" />
+              </div>
               <MiniCalendar vendorId={vendor.id} onSelect={handleDateSelect} />
             </div>
           </div>
@@ -522,6 +533,11 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
         <div className="grid md:grid-cols-2 gap-5">
           <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5">
             <h2 className="font-bold text-[#1A3A3C] mb-1">Pilih Tanggal Acara</h2>
+            <div className="mb-3 mt-2">
+              <label className="text-xs font-semibold text-[#4A7A6D] block mb-1.5">Jam Acara</label>
+              <input type="time" value={selectedTime} onChange={e => setSelectedTime(e.target.value)}
+                className="w-full border border-[#D4EAC8] rounded-xl px-3 py-2.5 text-sm text-[#1A3A3C] outline-none focus:border-[#1CABB4] bg-[#F0FBF5]" />
+            </div>
             <MiniCalendar vendorId={vendor.id} onSelect={handleDateSelect} />
             {selectedDate && <p className="text-xs text-center text-[#1CABB4] font-semibold mt-2 animate-pulse">{user ? "Mengarahkan ke booking..." : "Silakan login dulu..."}</p>}
           </div>
