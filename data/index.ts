@@ -44,6 +44,7 @@ export interface Category {
   icon: string;
   color: string;
   productCount: number;
+  parent?: string; // untuk sub-kategori, misal "sewa"
 }
 
 export interface Review {
@@ -88,6 +89,10 @@ export const categories: Category[] = [
   { id: "merchandise-wisuda", name: "Merchandise Wisuda", icon: "", color: "#A855F7", productCount: 189 },
   { id: "catering", name: "Catering", icon: "", color: "#F97316", productCount: 112 },
   { id: "mua", name: "MUA / Make Up Artist", icon: "", color: "#D946EF", productCount: 0 },
+  { id: "sewa-baju", name: "Sewa Baju", icon: "", color: "#0EA5E9", productCount: 0, parent: "sewa" },
+  { id: "sewa-jas", name: "Sewa Jas", icon: "", color: "#0EA5E9", productCount: 0, parent: "sewa" },
+  { id: "sewa-gedung", name: "Sewa Gedung", icon: "", color: "#0EA5E9", productCount: 0, parent: "sewa" },
+  { id: "sewa-hotel", name: "Sewa Hotel", icon: "", color: "#0EA5E9", productCount: 0, parent: "sewa" },
 ];
 
 // ============ STORES ============
