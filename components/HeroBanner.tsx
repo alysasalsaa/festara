@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Search, ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { categories } from "@/data";
+import { supabase } from "@/lib/supabase";
 
 const SLIDES = [
   {
@@ -36,6 +37,26 @@ export default function HeroBanner() {
   const [selDate, setSelDate] = useState("");
   const [selBudget, setSelBudget] = useState("");
   const router = useRouter();
+
+  const [vendorCount, setVendorCount] = useState<number | null>(null);
+  const [avgRating, setAvgRating] = useState<number | null>(null);
+
+  useEffect(() => {
+    async function fetchStats() {
+      const { count } = await supabase
+        .from("vendors")
+        .select("id", { count: "exact", head: true })
+        .eq("is_active", true);
+      setVendorCount(count ?? 0);
+
+      const { data: reviews } = await supabase.from("reviews").select("rating");
+      if (reviews && reviews.length > 0) {
+        const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+        setAvgRating(avg);
+      }
+    }
+    fetchStats();
+  }, []);
 
   useEffect(() => {
     if (!auto) return;
@@ -147,9 +168,13 @@ export default function HeroBanner() {
         </div>
 
         <div className="flex items-center gap-4 mt-5 flex-wrap">
-          {["💍 1.200+ Vendor", "⭐ 4.9 Rating", "🔒 Pembayaran Aman"].map(tag => (
-            <span key={tag} className="text-white/70 text-xs font-medium">{tag}</span>
-          ))}
+          {vendorCount != null && (
+            <span className="text-white/70 text-xs font-medium">💍 {vendorCount} Vendor</span>
+          )}
+          {avgRating != null && (
+            <span className="text-white/70 text-xs font-medium">⭐ {avgRating.toFixed(1)} Rating</span>
+          )}
+          <span className="text-white/70 text-xs font-medium">🔒 Pembayaran Aman</span>
         </div>
       </div>
 
