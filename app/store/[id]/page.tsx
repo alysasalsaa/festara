@@ -378,7 +378,7 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
       <div className="bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] mb-5 flex overflow-x-auto scrollbar-hide">
         {TABS.map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`flex-1 py-3.5 text-sm font-semibold whitespace-nowrap px-4 transition-colors ${tab === t ? "text-[#1CABB4] border-b-2 border-[#1CABB4] bg-[#E8F8F9]/60" : "text-[#8ABDB5] hover:text-[#4A7A6D]"}`}>
+            className={`flex-shrink-0 py-3.5 text-sm font-semibold whitespace-nowrap px-4 transition-colors ${tab === t ? "text-[#1CABB4] border-b-2 border-[#1CABB4] bg-[#E8F8F9]/60" : "text-[#8ABDB5] hover:text-[#4A7A6D]"}`}>
             {t}
           </button>
         ))}
