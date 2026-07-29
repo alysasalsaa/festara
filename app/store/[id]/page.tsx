@@ -144,7 +144,7 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
   const [selectedTime, setSelectedTime] = useState("10:00");
   const [showLoginModal, setShowLoginModal] = useState(false);
 
-  const [packages, setPackages] = useState<{ id: string; name: string; description: string | null; price: number; is_popular: boolean }[]>([]);
+  const [packages, setPackages] = useState<{ id: string; name: string; description: string | null; price: number; promo_price: number | null; is_popular: boolean }[]>([]);
   const [portfolio, setPortfolio] = useState<PortfolioImage[]>([]);
   const [reviews, setReviews] = useState<VendorReview[]>([]);
   const [avgRating, setAvgRating] = useState(0);
@@ -177,7 +177,7 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
     async function fetchPackages() {
       const { data } = await supabase
         .from("packages")
-        .select("id, name, description, price, is_popular")
+        .select("id, name, description, price, promo_price, is_popular")
         .eq("vendor_id", vendor!.id)
         .eq("is_active", true)
         .order("price");
@@ -417,23 +417,34 @@ export default function VendorPage({ params }: { params: Promise<{ id: string }>
             {packages.length === 0 ? (
               <p className="text-center text-sm text-[#8ABDB5] py-10 bg-white rounded-2xl">Vendor ini belum menambahkan paket layanan.</p>
             ) : (
-              packages.map((pkg, i) => (
-                <div key={pkg.id} onClick={() => setSelectedPkg(i)}
-                  className={`bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5 cursor-pointer border-2 transition-all ${selectedPkg === i ? "border-[#1CABB4]" : "border-transparent hover:border-[#DBEBC9]"}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-bold text-[#1A3A3C]">{pkg.name}</h3>
-                        {pkg.is_popular && <span className="text-[10px] bg-[#1CABB4] text-white font-bold px-2 py-0.5 rounded-full">Terpopuler</span>}
+              packages.map((pkg, i) => {
+                const hasPromo = pkg.promo_price != null && pkg.promo_price < pkg.price;
+                return (
+                  <div key={pkg.id} onClick={() => setSelectedPkg(i)}
+                    className={`bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5 cursor-pointer border-2 transition-all ${selectedPkg === i ? "border-[#1CABB4]" : "border-transparent hover:border-[#DBEBC9]"}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <h3 className="font-bold text-[#1A3A3C]">{pkg.name}</h3>
+                          {pkg.is_popular && <span className="text-[10px] bg-[#1CABB4] text-white font-bold px-2 py-0.5 rounded-full">Terpopuler</span>}
+                          {hasPromo && <span className="text-[10px] bg-[#EF4444] text-white font-bold px-2 py-0.5 rounded-full">Promo</span>}
+                        </div>
+                        <p className="text-sm text-[#4A7A6D]">{pkg.description}</p>
                       </div>
-                      <p className="text-sm text-[#4A7A6D]">{pkg.description}</p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="font-extrabold text-[#1CABB4] text-lg">{formatPrice(pkg.price)}</p>
+                      <div className="text-right flex-shrink-0">
+                        {hasPromo ? (
+                          <>
+                            <p className="text-xs text-[#8ABDB5] line-through">{formatPrice(pkg.price)}</p>
+                            <p className="font-extrabold text-[#EF4444] text-lg">{formatPrice(pkg.promo_price!)}</p>
+                          </>
+                        ) : (
+                          <p className="font-extrabold text-[#1CABB4] text-lg">{formatPrice(pkg.price)}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
             {selectedPkg !== null && packages[selectedPkg] && (
               <button onClick={goToChat} className="w-full bg-[#1CABB4] text-white font-bold text-center py-3.5 rounded-2xl hover:bg-[#178E96] transition-colors">
