@@ -95,13 +95,89 @@ export async function getVendorApplications(status?: string): Promise<VendorAppl
   return withSignedUrls;
 }
 
+// Salin foto portofolio dari bucket privat aplikasi ke bucket publik "portfolio",
+// lalu catat setiap foto di tabel portfolio_images untuk vendor yang baru disetujui.
+async function copyApplicationPortfolioToVendor(
+  applicationId: string,
+  vendorId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data: app, error: fetchError } = await supabase
+    .from("vendor_applications")
+    .select("portfolio_urls")
+    .eq("id", applicationId)
+    .single();
+
+  if (fetchError) {
+    return { success: false, error: fetchError.message };
+  }
+
+  const portfolioUrls: string[] = app?.portfolio_urls || [];
+  if (portfolioUrls.length === 0) {
+    return { success: true };
+  }
+
+  for (let i = 0; i < portfolioUrls.length; i++) {
+    const sourcePath = portfolioUrls[i];
+
+    // Download file dari bucket privat
+    const { data: fileBlob, error: downloadError } = await supabase.storage
+      .from("vendor-application-files")
+      .download(sourcePath);
+
+    if (downloadError || !fileBlob) {
+      console.error(`Gagal download portofolio ${sourcePath}:`, downloadError);
+      continue;
+    }
+
+    // Tentukan nama file tujuan di bucket publik
+    const extension = sourcePath.split(".").pop() || "jpg";
+    const destPath = `${vendorId}/${crypto.randomUUID()}.${extension}`;
+
+    // Upload ke bucket publik "portfolio"
+    const { error: uploadError } = await supabase.storage
+      .from("portfolio")
+      .upload(destPath, fileBlob, { contentType: fileBlob.type, upsert: false });
+
+    if (uploadError) {
+      console.error(`Gagal upload portofolio ${destPath}:`, uploadError);
+      continue;
+    }
+
+    const { data: publicUrlData } = supabase.storage.from("portfolio").getPublicUrl(destPath);
+
+    const { error: insertError } = await supabase.from("portfolio_images").insert({
+      vendor_id: vendorId,
+      image_url: publicUrlData.publicUrl,
+      order_index: i,
+    });
+
+    if (insertError) {
+      console.error(`Gagal simpan portfolio_images untuk ${destPath}:`, insertError);
+    }
+  }
+
+  return { success: true };
+}
+
 export async function approveVendorApplication(applicationId: string): Promise<{ success: boolean; error?: string }> {
-  const { error } = await supabase.rpc("approve_vendor_application", { application_id: applicationId });
+  const { data: newVendorId, error } = await supabase.rpc("approve_vendor_application", {
+    application_id: applicationId,
+  });
 
   if (error) {
     console.error("Gagal approve aplikasi:", error);
     return { success: false, error: error.message };
   }
+
+  if (newVendorId) {
+    const copyResult = await copyApplicationPortfolioToVendor(applicationId, newVendorId as string);
+    if (!copyResult.success) {
+      console.error("Vendor berhasil dibuat tapi portofolio gagal disalin:", copyResult.error);
+      // Tidak menggagalkan approve secara keseluruhan — vendor tetap disetujui,
+      // tapi catat error supaya bisa diinvestigasi.
+    }
+  }
+
   return { success: true };
 }
 
