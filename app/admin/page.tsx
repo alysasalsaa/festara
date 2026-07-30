@@ -160,7 +160,7 @@ export default function AdminHomePage() {
     <div className="space-y-5">
       <h2 className="font-bold text-[#1A3A3C]">Ringkasan Admin</h2>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="flex flex-wrap gap-3">
         {statCards.map((card) => {
           const Icon = card.icon;
           const content = (
@@ -187,11 +187,11 @@ export default function AdminHomePage() {
           );
 
           return card.href ? (
-            <Link key={card.label} href={card.href}>
+            <Link key={card.label} href={card.href} className="flex-1 basis-[160px] min-w-[160px]">
               {content}
             </Link>
           ) : (
-            <div key={card.label}>{content}</div>
+            <div key={card.label} className="flex-1 basis-[160px] min-w-[160px]">{content}</div>
           );
         })}
       </div>
