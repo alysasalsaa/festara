@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Store, Wallet, CalendarCheck2, Users, TrendingUp, Clock, ArrowRight, FileImage } from "lucide-react";
+import { Store, Wallet, CalendarCheck2, Users, TrendingUp, Clock, ArrowRight, FileImage, UserPlus, Eye } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { formatPrice } from "@/data";
 
@@ -11,6 +11,8 @@ type Stats = {
   bookingsThisMonth: number;
   totalRevenue: number;
   activeVendors: number;
+  totalUsers: number;
+  totalPageViews: number;
 };
 
 type ActivityItem = {
@@ -38,6 +40,8 @@ export default function AdminHomePage() {
         { count: bookingsThisMonth },
         { data: revenueRows },
         { count: activeVendors },
+        { count: totalUsers },
+        { count: totalPageViews },
         { data: recentApps },
         { data: recentProofs },
       ] = await Promise.all([
@@ -46,6 +50,8 @@ export default function AdminHomePage() {
         supabase.from("bookings").select("id", { count: "exact", head: true }).gte("created_at", startOfMonth),
         supabase.from("transactions").select("amount").in("status", ["paid", "disbursed"]),
         supabase.from("vendors").select("id", { count: "exact", head: true }).eq("is_active", true),
+        supabase.from("users").select("id", { count: "exact", head: true }),
+        supabase.from("page_views").select("id", { count: "exact", head: true }),
         supabase.from("vendor_applications").select("id, business_name, status, created_at").order("created_at", { ascending: false }).limit(5),
         supabase.from("transactions").select("id, order_id, status, proof_uploaded_at").not("proof_uploaded_at", "is", null).order("proof_uploaded_at", { ascending: false }).limit(5),
       ]);
@@ -58,6 +64,8 @@ export default function AdminHomePage() {
         bookingsThisMonth: bookingsThisMonth || 0,
         totalRevenue,
         activeVendors: activeVendors || 0,
+        totalUsers: totalUsers || 0,
+        totalPageViews: totalPageViews || 0,
       });
 
       const appItems: ActivityItem[] = (recentApps || []).map((a) => ({
@@ -131,6 +139,20 @@ export default function AdminHomePage() {
       icon: Users,
       needsAttention: false,
       href: "/admin/vendors",
+    },
+    {
+      label: "Total Pendaftaran Akun",
+      value: stats.totalUsers,
+      icon: UserPlus,
+      needsAttention: false,
+      href: null,
+    },
+    {
+      label: "Total Kunjungan Halaman",
+      value: stats.totalPageViews,
+      icon: Eye,
+      needsAttention: false,
+      href: null,
     },
   ];
 

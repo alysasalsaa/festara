@@ -3,6 +3,7 @@ import "./globals.css";
 import ToastProvider from "@/components/ToastProvider";
 import RealtimeNotificationToast from "@/components/RealtimeNotificationToast";
 import SiteChrome from "@/components/SiteChrome";
+import PageViewTracker from "@/components/PageViewTracker";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://festara.id"),
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="id">
       <body suppressHydrationWarning className="min-h-screen">
+        <PageViewTracker />
         <ToastProvider />
         <RealtimeNotificationToast />
         <SiteChrome>{children}</SiteChrome>
